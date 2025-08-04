@@ -1,5 +1,5 @@
 """
-Staging settings for LaunchKit.
+Staging settings for MyAddressHub.
 """
 
 from .production import *

@@ -40,8 +40,10 @@ export function Navbar() {
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold text-gray-800 dark:text-white">
-              LaunchKit
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                MyAddressHub
+              </span>
             </Link>
           </div>
 

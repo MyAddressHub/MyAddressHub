@@ -1,5 +1,5 @@
 """
-URL configuration for LaunchKit.
+URL configuration for MyAddressHub.
 """
 
 from django.conf import settings
@@ -26,6 +26,7 @@ urlpatterns = [
     
     # API endpoints
     path("api/auth/", include("apps.accounts.urls")),
+    path("api/addresses/", include("apps.addresses.urls")),
 ]
 
 # Add debug toolbar URLs in development

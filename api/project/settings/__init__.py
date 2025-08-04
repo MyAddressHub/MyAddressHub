@@ -1,7 +1,5 @@
 """
-Settings module for LaunchKit.
-
-This module selects the appropriate settings file based on the DJANGO_ENV environment variable.
+Settings module for MyAddressHub.
 """
 
 import os
@@ -13,5 +11,7 @@ if environment == "production":
     from .production import *
 elif environment == "staging":
     from .staging import *
+elif environment == "simple_dev":
+    from .simple_dev import *
 else:
     from .development import * 

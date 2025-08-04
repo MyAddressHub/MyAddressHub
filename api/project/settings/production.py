@@ -1,5 +1,5 @@
 """
-Production settings for LaunchKit.
+Production settings for MyAddressHub.
 """
 
 from .base import *
@@ -8,7 +8,7 @@ from .base import *
 FRONTEND_URL = env("FRONTEND_URL")
 
 # Site name
-PROJECT_NAME = env("PROJECT_NAME", default="LaunchKit")
+PROJECT_NAME = env("PROJECT_NAME", default="MyAddressHub")
 
 # Security settings
 DEBUG = False

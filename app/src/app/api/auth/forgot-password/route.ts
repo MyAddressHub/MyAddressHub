@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server';
-import { API_URL } from '@/lib/config';
+import { APP_CONFIG } from '@/lib/config';
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
-
-    if (!email) {
-      return NextResponse.json(
-        { message: 'Email is required' },
-        { status: 400 }
-      );
-    }
-
-    const response = await fetch(`${API_URL}/api/auth/reset-password-email/`, {
+    
+    const response = await fetch(`${APP_CONFIG.API_BASE_URL}/api/auth/reset-password-email/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -20,22 +13,19 @@ export async function POST(request: Request) {
       body: JSON.stringify({ email }),
     });
 
-    if (!response.ok) {
-      const data = await response.json();
+    const data = await response.json();
+
+    if (response.ok) {
+      return NextResponse.json({ success: true, message: 'Password reset email sent' });
+    } else {
       return NextResponse.json(
-        { message: data.detail || 'Failed to process request' },
+        { success: false, error: data.error || 'Failed to send reset email' },
         { status: response.status }
       );
     }
-
-    return NextResponse.json(
-      { message: 'Password reset email sent successfully' },
-      { status: 200 }
-    );
   } catch (error) {
-    console.error('Password reset request error:', error);
     return NextResponse.json(
-      { message: 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

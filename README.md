@@ -1,265 +1,173 @@
-# LaunchKit
+# MyAddressHub
 
-```
- _                            _     _   ___ _   
-| |                          | |   | | / (_) |  
-| |     __ _ _   _ _ __   ___| |__ | |/ / _| |_ 
-| |    / _` | | | | '_ \ / __| '_ \|    \| | __|
-| |___| (_| | |_| | | | | (__| | | | |\  \ | |_ 
-\_____/\__,_|\__,_|_| |_|\___|_| |_\_| \_/_|\__| 
-```
+A modern, full-stack web application template with Django backend and Next.js frontend, featuring authentication, user management, and a comprehensive development environment.
 
-Full‑stack Django + DRF + Celery + RabbitMQ + Redis + Next.js boilerplate. Everything ships in a single repository, one‑command deploy with Docker Compose.
+## 🚀 Features
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Django](https://img.shields.io/badge/Django-4.2-green.svg)](https://www.djangoproject.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black.svg)](https://nextjs.org/)
-[![Docker](https://img.shields.io/badge/Docker-20.10+-blue.svg)](https://www.docker.com/)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.0-4baaaa.svg)](CODE_OF_CONDUCT.md)
+- **Full-Stack Architecture**: Django REST API + Next.js frontend
+- **Authentication System**: Complete user registration, login, and password reset
+- **Modern UI**: Built with Tailwind CSS and responsive design
+- **Development Environment**: Docker-based setup with hot reloading
+- **Production Ready**: Optimized for deployment with monitoring and logging
+- **Database**: PostgreSQL with Redis for caching
+- **Task Queue**: Celery with RabbitMQ for background tasks
+- **Email Integration**: SMTP email functionality
+- **API Documentation**: Auto-generated with Swagger/OpenAPI
 
-## Quick Links
+## 📚 Documentation
 
-- [Development Guide](docs/DEVELOPMENT.md) - Setup and development workflow
-- [Production Guide](docs/PRODUCTION.md) - Deployment and production setup
-- [API Handling Guide](API_HANDLING_GUIDE.md) - API development guidelines
-- [Celery Setup Guide](celery-setup.md) - Background task configuration
-- [Contributing Guide](CONTRIBUTING.md) - How to contribute to LaunchKit
-- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
-- [Changelog](CHANGELOG.md) - Project version history
+- [Development Guide](docs/DEVELOPMENT.md) - How to set up and run the development environment
+- [Production Guide](docs/PRODUCTION.md) - How to deploy to production
+- [Contributing Guide](CONTRIBUTING.md) - How to contribute to MyAddressHub
+- [API Handling Guide](API_HANDLING_GUIDE.md) - Frontend API integration patterns
 
-## Getting Started
+## 🛠️ Quick Start
 
-### Option 1: Fork and Clone (Recommended)
+### Prerequisites
 
-1. **Fork the Repository**
-   - Click the "Fork" button in the top-right corner of this repository
-   - This creates your own copy of LaunchKit in your GitHub account
+- Docker and Docker Compose
+- Git
 
-2. **Clone Your Fork**
+### Getting Started
+
+1. **Fork the repository**
+   - This creates your own copy of MyAddressHub in your GitHub account
+   - You can then clone your fork and make changes
+
+2. **Clone your fork**
    ```bash
-   # Replace YOUR_USERNAME with your GitHub username
-   git clone https://github.com/YOUR_USERNAME/LaunchKit.git
-   cd LaunchKit
+   git clone https://github.com/YOUR_USERNAME/MyAddressHub.git
+   cd MyAddressHub
    ```
 
-3. **Add Upstream Remote**
+3. **Set up the upstream remote**
    ```bash
-   git remote add upstream https://github.com/ShovanSarker/LaunchKit.git
+   git remote add upstream https://github.com/ShovanSarker/MyAddressHub.git
    ```
 
-4. **Keep Your Fork Updated**
+4. **Run the development setup script**
    ```bash
-   git fetch upstream
-   git checkout main
-   git merge upstream/main
-   ```
-
-### Option 2: Use as Template
-
-1. **Create New Repository**
-   - Click "Use this template" button on GitHub
-   - Choose a name for your new repository
-   - Select public or private visibility
-
-2. **Clone Your New Repository**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-   cd YOUR_REPO_NAME
-   ```
-
-### Initial Setup
-
-1. **Setup Development Environment**
-   ```bash
-   # Run the setup script
+   chmod +x scripts/setup_development.sh
    ./scripts/setup_development.sh
    ```
-   This script will:
-   - Create necessary environment files
-   - Generate the `run_dev.sh` script in the scripts directory
-   - Set up initial configurations
-   - Make scripts executable
 
-2. **Start Development Environment**
-   ```bash
-   # Start all services
-   ./scripts/run_dev.sh
-   ```
-
-3. **Access the Application**
+5. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/api/schema/swagger-ui/
-   - Admin Interface: http://localhost:8000/admin
+   - API Documentation: http://localhost:8000/api/docs/
 
-### Customization
+## 🏗️ Architecture
 
-1. **Update Project Name**
-   - Edit `api/project/settings.py`
-   - Update `app/package.json`
-   - Modify Docker configurations
+MyAddressHub uses a modern architecture consisting of:
 
-2. **Configure Environment**
-   - Update `.env` file with your settings
-   - Configure database settings
-   - Set up authentication keys
+### Backend (Django)
+- **Framework**: Django 4.2+ with Django REST Framework
+- **Database**: PostgreSQL with Django ORM
+- **Authentication**: JWT-based authentication
+- **API**: RESTful API with automatic documentation
+- **Task Queue**: Celery with RabbitMQ
+- **Caching**: Redis
+- **Email**: SMTP integration with templates
 
-3. **Add Your Features**
-   - Create new Django apps in `api/apps/`
-   - Add new Next.js pages in `app/pages/`
-   - Update API endpoints in `api/apps/`
+### Frontend (Next.js)
+- **Framework**: Next.js 14+ with App Router
+- **Styling**: Tailwind CSS with custom components
+- **State Management**: React Context API
+- **HTTP Client**: Axios with interceptors
+- **TypeScript**: Full TypeScript support
+- **Responsive Design**: Mobile-first approach
 
-### Development Workflow
+### Development Environment
+- **Containerization**: Docker and Docker Compose
+- **Hot Reloading**: Both frontend and backend
+- **Database**: PostgreSQL with persistent data
+- **Monitoring**: Health checks and logging
+- **Environment**: Isolated development environment
 
-1. **Create Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. **Make Changes**
-   - Write code
-   - Add tests
-   - Update documentation
-
-3. **Commit Changes**
-   ```bash
-   git add .
-   git commit -m "Add your feature"
-   ```
-
-4. **Push Changes**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-5. **Create Pull Request**
-   - Go to your fork on GitHub
-   - Click "New Pull Request"
-   - Select your feature branch
-   - Fill in the PR template
-
-## Features
-
-- **Django Backend**: Fully configured Django API with REST framework
-- **Containerized**: Complete Docker setup for both development and production
-- **Authentication**: User authentication with JWT tokens and advanced security features
-- **Background Processing**: Celery task queue with Redis and RabbitMQ
-- **Database**: PostgreSQL with migrations management
-- **Dev Workflow**: Streamlined development environment with helpful scripts
-- **Monitoring**: Prometheus and Grafana setup for production monitoring
-- **Deployment Ready**: Configuration for easy deployment to production
-- **Next.js 14.1.0 frontend with TypeScript and Tailwind CSS**
-- **Auto-deployment system**
-
-## Architecture
-
-LaunchKit uses a modern architecture consisting of:
-
-- **Backend**: Django API with Django REST Framework
-- **Database**: PostgreSQL for reliable data storage
-- **Caching**: Redis for fast caching and session storage
-- **Message Broker**: RabbitMQ for reliable message queueing
-- **Task Processing**: Celery for background task processing
-- **Frontend**: Next.js with TypeScript and Tailwind CSS
-- **Reverse Proxy**: Nginx for production deployments
-- **Monitoring**: Prometheus and Grafana for system monitoring
-
-### Architecture Diagram
+## 📁 Project Structure
 
 ```
-                                    ┌────────────┐   HTTPS   ┌────────────┐
-                      Internet ────▶│   Nginx    │──────────▶│ Frontend   │ 
-                                    │(reverse    │           │(Next.js)   │
-                                    │ proxy)     │           └────────────┘
-                                    └────────────┘    
-                                          │
-                                          │ /api
-                                          ▼                             
-┌────────────┐           ┌────────────┐   │      ┌────────────┐ AMQP  ┌────────────┐
-│ Prometheus │◀──────────│ Django API │◀──┘      │ RabbitMQ   │◀─────▶│ Celery     │
-│ Monitoring │           └────────────┘          │ Message    │       │ Worker     │
-└────────────┘                  │                │ Broker     │       └────────────┘
-      ▲                         │                │            │
-      │                         │                └────────────┘             │
-      │                         ▼                                           │
-      │                 ┌────────────┐          ┌────────────┐              │
-      └─────────────────│ PostgreSQL │◀─────────│ Redis      │◀─────────────┘
-                        │ Database   │          │ Cache      │
-                        └────────────┘          └────────────┘
+MyAddressHub/
+├── api/                    # Django backend
+│   ├── apps/              # Django applications
+│   ├── project/           # Django project settings
+│   ├── requirements/      # Python dependencies
+│   └── manage.py         # Django management
+├── app/                   # Next.js frontend
+│   ├── src/              # Source code
+│   ├── public/           # Static assets
+│   └── package.json      # Node.js dependencies
+├── docs/                 # Documentation
+├── scripts/              # Setup and deployment scripts
+└── templates/            # Environment templates
 ```
 
-## Prerequisites
+## 🔧 Development
 
-Before getting started, ensure you have the following installed:
-
-- [Docker](https://www.docker.com/get-started) (v20.10+)
-- [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
-- [Git](https://git-scm.com/downloads)
-
-## File Structure
-
-```
-launchkit/
-├── api/                      # Django backend
-│   ├── apps/                 # Django applications
-│   ├── project/              # Project settings
-│   ├── requirements/         # Python requirements
-│   ├── templates/            # Django templates
-│   └── manage.py             # Django management script
-├── app/                      # Next.js frontend
-├── docker/                   # Docker configuration
-│   ├── api/                  # API container configuration
-│   ├── nginx/                # Nginx configuration
-│   ├── postgres/             # PostgreSQL configuration
-│   └── ...                   # Other services
-├── scripts/                  # Helper scripts
-│   ├── setup_development.sh  # Development environment setup
-│   ├── run_dev.sh            # Development environment management
-│   └── ...                   # Other scripts
-├── templates/                # Configuration templates
-│   └── env/                  # Environment templates
-├── docs/                     # Documentation
-│   ├── DEVELOPMENT.md        # Development guide
-│   └── PRODUCTION.md         # Production guide
-├── .github/                  # GitHub configuration
-│   ├── ISSUE_TEMPLATE/       # Issue templates
-│   │   ├── bug_report.md
-│   │   └── feature_request.md
-│   └── PULL_REQUEST_TEMPLATE.md
-├── CHANGELOG.md              # Project changelog
-├── CODE_OF_CONDUCT.md        # Community guidelines
-├── CONTRIBUTING.md           # Contribution guidelines
-├── LICENSE                   # MIT License
-├── .env                      # Environment variables (generated)
-├── docker-compose.yml        # Docker Compose configuration
-└── README.md                 # This file
+### Backend Development
+```bash
+cd api
+python manage.py runserver
 ```
 
-## Documentation
+### Frontend Development
+```bash
+cd app
+npm run dev
+```
 
-- [Development Guide](docs/DEVELOPMENT.md) - Detailed instructions for setting up and running the development environment
-- [Production Guide](docs/PRODUCTION.md) - Comprehensive guide for deploying to production
-- [API Handling Guide](API_HANDLING_GUIDE.md) - Guidelines for API development
-- [Celery Setup Guide](celery-setup.md) - Configuration for background tasks
-- [Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
-- [Code of Conduct](CODE_OF_CONDUCT.md) - Community guidelines
-- [Changelog](CHANGELOG.md) - Project version history
+### Database Migrations
+```bash
+cd api
+python manage.py makemigrations
+python manage.py migrate
+```
 
-## Acknowledgments
+### Running Tests
+```bash
+# Backend tests
+cd api
+python manage.py test
 
-- [Django](https://www.djangoproject.com/)
-- [Docker](https://www.docker.com/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Redis](https://redis.io/)
-- [RabbitMQ](https://www.rabbitmq.com/)
-- [Celery](https://docs.celeryq.dev/)
-- [Nginx](https://nginx.org/)
-- [Prometheus](https://prometheus.io/)
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
+# Frontend tests
+cd app
+npm test
+```
+
+## 🚀 Deployment
+
+### Development Deployment
+```bash
+./scripts/setup_development.sh
+```
+
+### Production Deployment
+```bash
+./scripts/deploy_production.sh
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to submit pull requests, report issues, and contribute to the project.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Django and Django REST Framework for the robust backend
+- Next.js team for the excellent React framework
+- Tailwind CSS for the utility-first CSS framework
+- All contributors who help improve MyAddressHub
+
+## 📞 Support
+
+If you need help or have questions:
+- Check the [documentation](docs/)
+- Open an [issue](https://github.com/ShovanSarker/MyAddressHub/issues)
+- Join our community discussions
 
 ---
 
-Created with ❤️ by Shovan 
+**MyAddressHub** - Your complete full-stack web application template 

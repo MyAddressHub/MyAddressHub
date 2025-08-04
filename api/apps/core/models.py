@@ -1,5 +1,5 @@
 """
-Core models for LaunchKit.
+Core models for MyAddressHub.
 """
 
 import uuid

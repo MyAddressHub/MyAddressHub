@@ -4,47 +4,43 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
-export default function Home() {
+export default function HomePage() {
+  const { user, isLoading } = useAuth();
   const router = useRouter();
-  const { user } = useAuth();
 
-  // Redirect to login if not authenticated
   useEffect(() => {
-    if (user === null) { // Only redirect if we're sure user is not authenticated
-      router.replace('/auth/login');
+    if (!isLoading) {
+      if (!user) {
+        // Redirect to login if not authenticated
+        router.push('/auth/login');
+      } else if (user.profile?.user_type === 'organization') {
+        // Redirect organization users to org dashboard
+        router.push('/org-dashboard');
+      } else {
+        // Redirect individual users to addresses dashboard
+        router.push('/addresses');
+      }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
-  // Show loading state while checking authentication
-  if (user === undefined) {
+  // Show loading while determining redirect
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="mb-4 text-gray-600 dark:text-gray-300">Loading...</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // If not authenticated, don't render anything while redirecting
-  if (!user) {
-    return null;
-  }
-
+  // This should not be reached, but just in case
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Dashboard Content */}
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="border-4 border-dashed border-gray-200 dark:border-gray-700 rounded-lg h-96 p-4">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-              Welcome to Your Dashboard
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              This is your protected dashboard page. You're successfully logged in!
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600 dark:text-gray-300">Redirecting...</p>
       </div>
     </div>
   );

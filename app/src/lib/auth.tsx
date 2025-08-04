@@ -11,11 +11,24 @@ type User = {
   email: string;
   first_name: string;
   last_name: string;
+  date_joined: string;
+  last_login: string;
   profile: {
     id: string;
     bio: string;
     avatar: string | null;
     phone_number: string;
+    user_type: 'individual' | 'organization';
+    organization?: {
+      id: string;
+      name: string;
+      description: string;
+      is_active: boolean;
+      created_at: string;
+      updated_at: string;
+    };
+    created_at: string;
+    updated_at: string;
   };
 };
 
@@ -49,14 +62,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check if user is authenticated on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Set a timeout to prevent infinite loading
+      const timeoutId = setTimeout(() => {
+        console.log('Auth check timeout, setting isLoading to false');
+        setIsLoading(false);
+      }, 2000); // 2 second timeout
+
       try {
         const token = localStorage.getItem('accessToken');
         if (!token) {
+          console.log('No token found, user is not authenticated');
+          clearTimeout(timeoutId);
           setIsLoading(false);
           return;
         }
 
+        console.log('Token found, checking user profile...');
         const response = await userAPI.getProfile();
+        console.log('User profile loaded:', response.data);
         setUser(response.data);
       } catch (error) {
         console.error('Authentication check failed:', error);
@@ -65,6 +88,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('refreshToken');
         setUser(null);
       } finally {
+        clearTimeout(timeoutId);
+        console.log('Setting isLoading to false');
         setIsLoading(false);
       }
     };

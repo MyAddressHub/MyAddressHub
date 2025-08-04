@@ -1,6 +1,6 @@
 # Celery Setup Guide
 
-This guide explains how Celery is set up and configured in the LaunchKit project.
+This guide explains how Celery is set up and configured in the MyAddressHub project.
 
 ## Overview
 

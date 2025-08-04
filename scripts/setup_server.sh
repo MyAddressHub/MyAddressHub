@@ -116,7 +116,7 @@ setup_nginx() {
     rm -f /etc/nginx/sites-enabled/default
     
     # Create main application Nginx configuration
-    cat > /etc/nginx/sites-available/launchkit << EOL
+    cat > /etc/nginx/sites-available/myaddresshub << EOL
 # Main frontend server
 server {
     listen 80;
@@ -229,7 +229,7 @@ server {
 EOL
     
     # Enable the site
-    ln -s /etc/nginx/sites-available/launchkit /etc/nginx/sites-enabled/
+    ln -s /etc/nginx/sites-available/myaddresshub /etc/nginx/sites-enabled/
     
     # Create basic auth for monitoring
     print_message "Creating monitoring access credentials..."
@@ -264,7 +264,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'launchkit'
+  - job_name: 'myaddresshub'
     static_configs:
       - targets: 
         - 'localhost:8000'  # Django API
@@ -552,8 +552,8 @@ ALLOWED_HOSTS=${DOMAIN}
 CSRF_TRUSTED_ORIGINS=https://${DOMAIN}
 
 # Database settings
-DB_NAME=launchkit
-DB_USER=launchkit
+DB_NAME=myaddresshub
+DB_USER=myaddresshub
 DB_PASSWORD=your-db-password-here
 DB_HOST=localhost
 DB_PORT=5432
@@ -562,7 +562,7 @@ DB_PORT=5432
 REDIS_URL=redis://localhost:6379/0
 
 # RabbitMQ settings
-RABBITMQ_DEFAULT_USER=launchkit
+RABBITMQ_DEFAULT_USER=myaddresshub
 RABBITMQ_DEFAULT_PASS=your-rabbitmq-password-here
 
 # Email settings
@@ -604,7 +604,7 @@ setup_auto_deployment() {
 #!/bin/bash
 
 # Change to project directory
-cd /path/to/launchkit
+cd /path/to/myaddresshub
 
 # Check for updates
 git fetch origin
@@ -624,9 +624,9 @@ EOL
     chmod +x /usr/local/bin/check_updates.sh
     
     # Create systemd service
-    cat > /etc/systemd/system/launchkit-updater.service << 'EOL'
+    cat > /etc/systemd/system/myaddresshub-updater.service << 'EOL'
 [Unit]
-Description=LaunchKit Auto Updater
+Description=MyAddressHub Auto Updater
 After=network.target
 
 [Service]
@@ -637,15 +637,15 @@ Restart=always
 
 [Timer]
 OnCalendar=*:0/10
-Unit=launchkit-updater.service
+Unit=myaddresshub-updater.service
 
 [Install]
 WantedBy=multi-user.target
 EOL
     
     # Enable and start the service
-    systemctl enable launchkit-updater.timer
-    systemctl start launchkit-updater.timer
+    systemctl enable myaddresshub-updater.timer
+    systemctl start myaddresshub-updater.timer
 }
 
 # Main function

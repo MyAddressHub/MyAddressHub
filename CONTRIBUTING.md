@@ -1,87 +1,175 @@
-# Contributing to LaunchKit
+# Contributing to MyAddressHub
 
-Thank you for considering contributing to LaunchKit! This document provides guidelines and instructions for contributing.
+Thank you for considering contributing to MyAddressHub! This document provides guidelines and instructions for contributing.
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+- [Development Setup](#development-setup)
+- [Pull Request Process](#pull-request-process)
+- [Issue Guidelines](#issue-guidelines)
+- [Coding Standards](#coding-standards)
+- [Testing](#testing)
+- [Documentation](#documentation)
 
 ## Code of Conduct
 
-By participating in this project, you agree to abide by our Code of Conduct. Please be respectful and considerate of others.
+This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
-## How to Contribute
+## How Can I Contribute?
 
 ### Reporting Bugs
 
-1. Check if the bug has already been reported in the Issues.
-2. Create a new issue, providing:
-   - A clear title and description
-   - Steps to reproduce the issue
-   - Expected and actual results
-   - Version information (OS, Docker, etc.)
-   - Any relevant logs or screenshots
+- Use the GitHub issue tracker
+- Include detailed steps to reproduce the bug
+- Provide environment information (OS, browser, etc.)
+- Include error messages and stack traces
 
-### Suggesting Features
+### Suggesting Enhancements
 
-1. Check if the feature has already been suggested in the Issues.
-2. Create a new issue with the label "enhancement", providing:
-   - A clear title and description
-   - The rationale for the feature
-   - How it would work (if you have ideas)
+- Use the GitHub issue tracker
+- Describe the enhancement clearly
+- Explain why this enhancement would be useful
+- Include mockups or examples if applicable
 
-### Pull Request Process
+### Pull Requests
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/my-feature`).
-3. Make your changes, following our coding standards.
-4. Run tests to ensure they pass.
-5. Update documentation as necessary.
-6. Submit a pull request to the `main` branch.
+- Fork the repository
+- Create a feature branch
+- Make your changes
+- Add tests for new functionality
+- Update documentation
+- Submit a pull request
 
 ## Development Setup
 
-1. Clone the repository:
+1. **Fork the repository**
    ```bash
-   git clone https://github.com/your-username/launchkit.git
-   cd launchkit
+   git clone https://github.com/your-username/myaddresshub.git
+   cd myaddresshub
    ```
 
-2. Run the initialization script in development mode:
+2. **Set up the development environment**
    ```bash
-   ./scripts/init.sh
+   ./scripts/setup_development.sh
    ```
 
-3. Make your changes and test them.
+3. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+## Pull Request Process
+
+1. **Update documentation** if needed
+2. **Add tests** for new functionality
+3. **Ensure all tests pass**
+4. **Update the changelog** if applicable
+5. **Follow the existing code style**
+6. **Write clear commit messages**
+
+### Commit Message Format
+
+```
+type(scope): description
+
+[optional body]
+
+[optional footer]
+```
+
+Types:
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `test`: Test changes
+- `chore`: Build process or auxiliary tool changes
+
+## Issue Guidelines
+
+### Bug Reports
+
+- Use the bug report template
+- Include steps to reproduce
+- Provide expected vs actual behavior
+- Include environment details
+
+### Feature Requests
+
+- Use the feature request template
+- Describe the feature clearly
+- Explain the use case
+- Consider implementation complexity
 
 ## Coding Standards
 
 ### Python (Django)
 
 - Follow PEP 8 style guide
-- Use Black for formatting
-- Use isort for import sorting
-- Write docstrings for functions and classes
-- Include unit tests for new functionality
+- Use meaningful variable names
+- Add docstrings to functions and classes
+- Keep functions small and focused
+- Use type hints where appropriate
 
 ### JavaScript/TypeScript (Next.js)
 
-- Follow Prettier formatting
-- Use ESLint for linting
+- Follow ESLint configuration
+- Use meaningful variable names
+- Add JSDoc comments for functions
 - Use TypeScript for type safety
-- Write Jest tests for components and utilities
+- Follow React best practices
 
-### Git Commit Messages
+### General
 
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters
-- Reference issues and pull requests after the first line
+- Write self-documenting code
+- Add comments for complex logic
+- Keep functions small and focused
+- Use consistent naming conventions
 
-## Developer Certificate of Origin (DCO)
+## Testing
 
-By contributing to this project, you certify that:
+### Backend Tests
 
-1. The contribution was created in whole or in part by you.
-2. You have the right to submit it under the open source license used by this project.
-3. You understand and agree that your contribution may be used by the project maintainers and the community.
+```bash
+cd api
+python manage.py test
+```
 
-## Questions?
+### Frontend Tests
 
-If you have questions about contributing, please open an issue with the label "question". 
+```bash
+cd app
+npm test
+```
+
+### Running All Tests
+
+```bash
+./scripts/run_tests.sh
+```
+
+## Documentation
+
+- Update README.md for major changes
+- Update API documentation for endpoint changes
+- Add inline comments for complex code
+- Update setup instructions if needed
+
+## Getting Help
+
+- Check existing issues and pull requests
+- Ask questions in GitHub discussions
+- Review the documentation
+- Join our community chat
+
+## Recognition
+
+Contributors will be recognized in:
+- The project README
+- Release notes
+- The contributors list
+
+Thank you for contributing to MyAddressHub! 

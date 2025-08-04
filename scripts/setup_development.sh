@@ -72,7 +72,7 @@ get_project_info() {
   print_message "Enter project information:"
   
   read -p "Enter project name (e.g., MyProject): " PROJECT_NAME
-  PROJECT_NAME=${PROJECT_NAME:-"LaunchKit"}
+  PROJECT_NAME=${PROJECT_NAME:-"MyAddressHub"}
   
   # Convert project name to lowercase for slug
   suggested_slug=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')

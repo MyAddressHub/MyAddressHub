@@ -1,5 +1,5 @@
 """
-Health check URLs for LaunchKit.
+Health check URLs for MyAddressHub.
 """
 
 from django.urls import path

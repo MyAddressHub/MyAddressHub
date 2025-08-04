@@ -1,5 +1,5 @@
 """
-Email utilities for LaunchKit.
+Email utilities for MyAddressHub.
 """
 
 from typing import List, Optional

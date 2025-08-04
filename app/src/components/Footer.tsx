@@ -10,9 +10,9 @@ export function Footer() {
       <div className="container mx-auto px-6 py-8">
         <div className="flex flex-col items-center">
           <div className="py-6">
-            <p className="text-center text-sm text-gray-500 dark:text-gray-300">
-              © {currentYear} LaunchKit. All rights reserved.
-            </p>
+            <div className="text-center text-sm text-gray-500">
+              © {currentYear} MyAddressHub. All rights reserved.
+            </div>
           </div>
           
           <div className="flex space-x-6">

@@ -122,8 +122,12 @@ export const authAPI = {
 export const userAPI = {
   getProfile: async () => {
     try {
-      return await api.get('/api/auth/profile/');
+      console.log('userAPI.getProfile: Making request to /api/auth/profile/');
+      const response = await api.get('/api/auth/profile/');
+      console.log('userAPI.getProfile: Response received:', response.data);
+      return response;
     } catch (error) {
+      console.error('userAPI.getProfile: Error occurred:', error);
       // Don't transform the error, just pass it through
       throw error;
     }

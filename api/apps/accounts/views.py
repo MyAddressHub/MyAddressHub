@@ -21,6 +21,7 @@ from apps.accounts.serializers import (
     ResetPasswordEmailSerializer,
     ResetPasswordSerializer,
     UserProfileSerializer,
+    ProfileUpdateSerializer,
 )
 from apps.core.mail import send_email
 
@@ -94,7 +95,7 @@ class ResetPasswordEmailView(APIView):
                 context = {
                     'user': user,
                     'reset_url': reset_url,
-                    'project_name': getattr(settings, 'PROJECT_NAME', 'LaunchKit'),
+                    'project_name': getattr(settings, 'PROJECT_NAME', 'MyAddressHub'),
                 }
                 
                 # Render email templates
@@ -170,8 +171,8 @@ class ProfileUpdateView(generics.UpdateAPIView):
     """
     API endpoint for updating user profile.
     """
-    serializer_class = UserProfileSerializer
+    serializer_class = ProfileUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):
-        return self.request.user 
+        return self.request.user.profile 

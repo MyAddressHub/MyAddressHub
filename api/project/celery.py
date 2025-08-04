@@ -1,5 +1,5 @@
 """
-Celery configuration for LaunchKit
+Celery configuration for MyAddressHub
 """
 
 import os

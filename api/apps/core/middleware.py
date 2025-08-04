@@ -1,5 +1,5 @@
 """
-Middleware for LaunchKit core functionality.
+Middleware for MyAddressHub core functionality.
 """
 
 import uuid

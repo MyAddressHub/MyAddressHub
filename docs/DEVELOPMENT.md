@@ -1,10 +1,10 @@
 # Development Guide
 
-This guide will help you set up and run the LaunchKit development environment.
+This guide will help you set up and run the MyAddressHub development environment.
 
 ## Prerequisites
 
-Before getting started, ensure you have the following installed:
+Before you begin, ensure you have the following installed:
 
 - [Docker](https://www.docker.com/get-started) (v20.10+)
 - [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
@@ -12,220 +12,232 @@ Before getting started, ensure you have the following installed:
 
 ## Getting Started
 
-### Clone the Repository
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/ShovanSarker/LaunchKit.git
-cd LaunchKit
+git clone https://github.com/ShovanSarker/MyAddressHub.git
+cd MyAddressHub
 ```
 
-### Setup Development Environment
+### 2. Run the Setup Script
 
 ```bash
-# Run the setup script
+chmod +x scripts/setup_development.sh
 ./scripts/setup_development.sh
 ```
 
 This script will:
-1. Create necessary environment files
-2. Generate the `run_dev.sh` script in the scripts directory
-3. Set up initial configurations
-4. Make scripts executable
+- Create necessary environment files
+- Set up Docker containers
+- Initialize the database
+- Install dependencies
 
-### Start the Development Environment
+### 3. Start the Development Environment
 
 ```bash
-# Start all services using the generated script
 ./scripts/run_dev.sh
 ```
 
-This will start the following services:
-- PostgreSQL database
-- Redis cache
-- RabbitMQ message broker
-- Django API server
-- Celery worker
-- Celery scheduler (beat)
+### 4. Access the Application
 
-### Access the Application
-
-- Django API: [http://localhost:8000](http://localhost:8000)
-- Django Admin: [http://localhost:8000/admin](http://localhost:8000/admin)
-- API Documentation: [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
-- RabbitMQ Management: [http://localhost:15672](http://localhost:15672)
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/api/docs/
+- **Admin Interface**: http://localhost:8000/admin
 
 ## Development Workflow
 
-### Available Commands
+### Backend Development
 
-#### Main Commands
-
-| Command | Description |
-|---------|-------------|
-| `./scripts/run_dev.sh` | Start development environment |
-| `./scripts/run_dev.sh down` | Stop development environment |
-| `./scripts/run_dev.sh ps` | List running services |
-| `./scripts/run_dev.sh logs [service]` | Show logs for specific or all services |
-
-#### Database Commands
-
-| Command | Description |
-|---------|-------------|
-| `./scripts/run_dev.sh migrate` | Apply database migrations |
-| `./scripts/run_dev.sh makemigrations` | Create new migrations |
-| `./scripts/run_dev.sh createsuperuser` | Create admin user |
-
-#### Celery Commands
-
-| Command | Description |
-|---------|-------------|
-| `./scripts/run_dev.sh celery` | Start Celery worker |
-| `./scripts/run_dev.sh beat` | Start Celery beat |
-
-### Development to Production Workflow
-
-1. **Development**: Use `./scripts/run_dev.sh` for local development
-2. **Testing**: Run tests and ensure code quality
-3. **Staging**: Deploy to staging environment
-4. **Production**: Deploy to production environment
-
-## Common Issues and Troubleshooting
-
-### Setup Issues
-
-If you encounter issues during setup:
+The Django backend is located in the `api/` directory.
 
 ```bash
-# Check if setup script exists
-ls -l scripts/setup_development.sh
+# Navigate to the API directory
+cd api
 
-# Make sure it's executable
-chmod +x scripts/setup_development.sh
+# Run Django development server
+python manage.py runserver
 
-# Run setup again
+# Create a new Django app
+python manage.py startapp myapp apps/
+
+# Make migrations
+python manage.py makemigrations
+
+# Apply migrations
+python manage.py migrate
+
+# Create a superuser
+python manage.py createsuperuser
+
+# Run tests
+python manage.py test
+```
+
+### Frontend Development
+
+The Next.js frontend is located in the `app/` directory.
+
+```bash
+# Navigate to the app directory
+cd app
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Run linting
+npm run lint
+```
+
+### Database Management
+
+```bash
+# Access PostgreSQL database
+docker-compose exec db psql -U myaddresshub -d myaddresshub
+
+# Reset database
+docker-compose down -v
+docker-compose up -d db
+```
+
+### Environment Variables
+
+The development environment uses the following key environment variables:
+
+```bash
+# Database
+POSTGRES_DB=myaddresshub
+POSTGRES_USER=myaddresshub
+POSTGRES_PASSWORD=myaddresshub
+
+# Redis
+REDIS_URL=redis://redis:6379/0
+
+# RabbitMQ
+RABBITMQ_DEFAULT_USER=myaddresshub
+RABBITMQ_DEFAULT_PASS=myaddresshub
+
+# Django
+DJANGO_SECRET_KEY=your-secret-key
+DJANGO_DEBUG=True
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Email (optional for development)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+```
+
+## Project Structure
+
+```
+MyAddressHub/
+├── api/                    # Django backend
+│   ├── apps/              # Django applications
+│   │   ├── accounts/      # User authentication
+│   │   └── core/          # Core functionality
+│   ├── project/           # Django project settings
+│   ├── requirements/      # Python dependencies
+│   └── manage.py         # Django management
+├── app/                   # Next.js frontend
+│   ├── src/              # Source code
+│   │   ├── app/          # App router pages
+│   │   ├── components/   # React components
+│   │   └── lib/          # Utilities
+│   ├── public/           # Static assets
+│   └── package.json      # Node.js dependencies
+├── docs/                 # Documentation
+├── scripts/              # Setup and deployment scripts
+└── templates/            # Environment templates
+```
+
+## Common Tasks
+
+### Adding New API Endpoints
+
+1. Create a new Django app or use existing one
+2. Define models in `models.py`
+3. Create serializers in `serializers.py`
+4. Add views in `views.py`
+5. Configure URLs in `urls.py`
+6. Run migrations
+
+### Adding New Frontend Pages
+
+1. Create new page in `app/src/app/`
+2. Add components in `app/src/components/`
+3. Update navigation if needed
+4. Add API integration in `app/src/shared/api/`
+
+### Running Tests
+
+```bash
+# Backend tests
+cd api
+python manage.py test
+
+# Frontend tests
+cd app
+npm test
+
+# All tests
+./scripts/run_tests.sh
+```
+
+### Code Quality
+
+```bash
+# Backend linting
+cd api
+flake8 .
+black .
+isort .
+
+# Frontend linting
+cd app
+npm run lint
+npm run format
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port conflicts**: Change ports in `docker-compose.yml`
+2. **Database connection**: Ensure PostgreSQL container is running
+3. **Dependencies**: Run `docker-compose build --no-cache`
+4. **Permissions**: Ensure scripts are executable
+
+### Reset Development Environment
+
+```bash
+# Stop all containers
+docker-compose down
+
+# Remove volumes
+docker-compose down -v
+
+# Rebuild containers
+docker-compose build --no-cache
+
+# Start fresh
 ./scripts/setup_development.sh
 ```
 
-### Database Connection Issues
+## Next Steps
 
-If you can't connect to the database:
-
-```bash
-# Check if PostgreSQL is running
-./scripts/run_dev.sh ps
-
-# Check PostgreSQL logs
-./scripts/run_dev.sh logs db
-
-# Restart the database
-./scripts/run_dev.sh restart db
-```
-
-### Redis Connection Issues
-
-If Redis connection fails:
-
-```bash
-# Check Redis status
-./scripts/run_dev.sh ps redis
-
-# Check Redis logs
-./scripts/run_dev.sh logs redis
-
-# Restart Redis
-./scripts/run_dev.sh restart redis
-```
-
-### RabbitMQ Issues
-
-If RabbitMQ is not working:
-
-```bash
-# Check RabbitMQ status
-./scripts/run_dev.sh ps rabbitmq
-
-# Check RabbitMQ logs
-./scripts/run_dev.sh logs rabbitmq
-
-# Restart RabbitMQ
-./scripts/run_dev.sh restart rabbitmq
-```
-
-### Celery Issues
-
-If Celery tasks are not processing:
-
-```bash
-# Check Celery worker status
-./scripts/run_dev.sh ps celery
-
-# Check Celery logs
-./scripts/run_dev.sh logs celery
-
-# Restart Celery
-./scripts/run_dev.sh restart celery
-```
-
-## Environment Variables
-
-The setup script will create a `.env` file with the following variables:
-
-```env
-# Django settings
-DEBUG=True
-SECRET_KEY=your-secret-key-here
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database settings
-POSTGRES_DB=launchkit
-POSTGRES_USER=launchkit
-POSTGRES_PASSWORD=your-password-here
-
-# Redis settings
-REDIS_URL=redis://redis:6379/0
-
-# RabbitMQ settings
-RABBITMQ_DEFAULT_USER=launchkit
-RABBITMQ_DEFAULT_PASS=your-password-here
-```
-
-## Development Best Practices
-
-1. **Code Style**
-   - Follow PEP 8 for Python code
-   - Use ESLint and Prettier for JavaScript/TypeScript
-   - Write meaningful commit messages
-
-2. **Testing**
-   - Write unit tests for new features
-   - Run tests before committing
-   - Maintain test coverage
-
-3. **Documentation**
-   - Document new features
-   - Update API documentation
-   - Keep README up to date
-
-4. **Version Control**
-   - Use feature branches
-   - Keep commits atomic
-   - Review code before merging
-
-5. **Security**
-   - Never commit sensitive data
-   - Use environment variables
-   - Follow security best practices
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
-
-## Need Help?
-
-- Check the [troubleshooting guide](#common-issues-and-troubleshooting)
-- Open an issue on GitHub
-- Contact the maintainers 
+- Read the [Production Guide](PRODUCTION.md) for deployment
+- Check the [API Documentation](http://localhost:8000/api/docs/)
+- Explore the [Contributing Guide](../CONTRIBUTING.md)
+- Review the [Code of Conduct](../CODE_OF_CONDUCT.md) 

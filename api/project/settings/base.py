@@ -1,5 +1,5 @@
 """
-Base settings for LaunchKit.
+Base settings for MyAddressHub.
 
 These settings are common to all environments.
 """
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     # Local apps
     "apps.core",
     "apps.accounts",
+    "apps.addresses",
 ]
 
 MIDDLEWARE = [
@@ -240,8 +241,8 @@ AUTHENTICATION_BACKENDS = [
 
 # API Documentation
 SPECTACULAR_SETTINGS = {
-    "TITLE": env("PROJECT_NAME", default="LaunchKit") + " API",
-    "DESCRIPTION": "API documentation for LaunchKit",
+    "TITLE": env("PROJECT_NAME", default="MyAddressHub") + " API",
+    "DESCRIPTION": "API documentation for MyAddressHub",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }

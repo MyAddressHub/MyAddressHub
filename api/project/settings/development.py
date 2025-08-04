@@ -1,5 +1,5 @@
 """
-Development settings for LaunchKit.
+Development settings for MyAddressHub.
 """
 
 from .base import *
@@ -11,7 +11,7 @@ DEBUG = True
 FRONTEND_URL = "http://localhost:3000"
 
 # Site name
-PROJECT_NAME = env("PROJECT_NAME", default="LaunchKit")
+PROJECT_NAME = env("PROJECT_NAME", default="MyAddressHub")
 
 # Development apps
 INSTALLED_APPS += ["debug_toolbar"]

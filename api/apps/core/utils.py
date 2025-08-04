@@ -1,5 +1,5 @@
 """
-Utility functions for LaunchKit.
+Utility functions for MyAddressHub.
 """
 
 import json
