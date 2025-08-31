@@ -95,6 +95,10 @@ generate_env_variables() {
   SECRET_KEY=$(generate_random_string 50)
   DB_PASSWORD=$(generate_random_string 16)
   RABBITMQ_PASSWORD=$(generate_random_string 16)
+  
+  # Generate URL-encoded version of RabbitMQ password for AMQP URL
+  # This handles special characters like &, %, etc.
+  RABBITMQ_PASSWORD_URL_ENCODED=$(echo "$RABBITMQ_PASSWORD" | sed 's/&/%26/g' | sed 's/%/%25/g' | sed 's/!/%21/g' | sed 's/*/%2A/g')
 }
 
 # Apply template
@@ -124,6 +128,7 @@ apply_template() {
   sed -i.bak "s|%%SECRET_KEY%%|${SECRET_KEY}|g" "$output_file"
   sed -i.bak "s|%%DB_PASSWORD%%|${DB_PASSWORD}|g" "$output_file"
   sed -i.bak "s|%%RABBITMQ_PASSWORD%%|${RABBITMQ_PASSWORD}|g" "$output_file"
+  sed -i.bak "s|%%RABBITMQ_PASSWORD_URL_ENCODED%%|${RABBITMQ_PASSWORD_URL_ENCODED}|g" "$output_file"
   
   # Remove backup file
   rm -f "${output_file}.bak"
@@ -410,10 +415,21 @@ services:
       - POSTGRES_DB=\${POSTGRES_DB}
       - POSTGRES_USER=\${POSTGRES_USER}
       - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POLYGON_RPC_URL=http://hardhat-node:8545
+      - IPFS_API_URL=http://ipfs-node:5001
+      - CELERY_BROKER_URL=amqp://\${RABBITMQ_DEFAULT_USER}:${RABBITMQ_PASSWORD_URL_ENCODED}@rabbitmq:5672/\${RABBITMQ_DEFAULT_VHOST}
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      hardhat-node:
+        condition: service_healthy
+      ipfs-node:
+        condition: service_healthy
     ports:
       - "8000:8000"
     command: python manage.py runserver 0.0.0.0:8000
@@ -435,10 +451,21 @@ services:
       - POSTGRES_DB=\${POSTGRES_DB}
       - POSTGRES_USER=\${POSTGRES_USER}
       - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POLYGON_RPC_URL=http://hardhat-node:8545
+      - IPFS_API_URL=http://ipfs-node:5001
+      - CELERY_BROKER_URL=amqp://\${RABBITMQ_DEFAULT_USER}:${RABBITMQ_PASSWORD_URL_ENCODED}@rabbitmq:5672/\${RABBITMQ_DEFAULT_VHOST}
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      hardhat-node:
+        condition: service_healthy
+      ipfs-node:
+        condition: service_healthy
     command: celery -A project worker --loglevel=info
 
   # Celery Beat Scheduler
@@ -458,10 +485,21 @@ services:
       - POSTGRES_DB=\${POSTGRES_DB}
       - POSTGRES_USER=\${POSTGRES_USER}
       - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POLYGON_RPC_URL=http://hardhat-node:8545
+      - IPFS_API_URL=http://ipfs-node:5001
+      - CELERY_BROKER_URL=amqp://\${RABBITMQ_DEFAULT_USER}:${RABBITMQ_PASSWORD_URL_ENCODED}@rabbitmq:5672/\${RABBITMQ_DEFAULT_VHOST}
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      hardhat-node:
+        condition: service_healthy
+      ipfs-node:
+        condition: service_healthy
     command: celery -A project beat --loglevel=info
 
   # Database service
@@ -513,9 +551,77 @@ services:
       timeout: 5s
       retries: 5
 
+  # Hardhat Node for Smart Contract Development
+  hardhat-node:
+    build:
+      context: ../contracts
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_SLUG}_hardhat_node
+    volumes:
+      - ../contracts:/app
+      - hardhat-data:/app/node_modules
+    ports:
+      - "8546:8545"  # Hardhat node on different port
+    environment:
+      - NODE_ENV=development
+    command: npx hardhat node --hostname 0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Smart Contract Deployer
+  contract-deployer:
+    build:
+      context: ../contracts
+      dockerfile: Dockerfile
+    container_name: ${PROJECT_SLUG}_contract_deployer
+    volumes:
+      - ../contracts:/app
+      - hardhat-data:/app/node_modules
+    depends_on:
+      - hardhat-node
+    environment:
+      - NODE_ENV=development
+      - HARDHAT_NETWORK=localhost
+      - HARDHAT_NODE_URL=http://hardhat-node:8545
+    command: >
+      sh -c "
+        echo 'Waiting for Hardhat node to be ready...' &&
+        sleep 10 &&
+        echo 'Deploying smart contract...' &&
+        npx hardhat run deploy.js --network localhost &&
+        echo 'Contract deployment completed!'
+      "
+    restart: "no"
+
+  # IPFS Node
+  ipfs-node:
+    image: ipfs/kubo:latest
+    container_name: ${PROJECT_SLUG}_ipfs_node
+    volumes:
+      - ipfs-data:/data/ipfs
+      - ipfs-staging:/export
+    ports:
+      - "4001:4001"   # P2P port
+      - "5001:5001"   # API port
+      - "8080:8080"   # Gateway port
+    environment:
+      - IPFS_PROFILE=server
+    command: daemon --migrate=true --agent-version-suffix=docker
+    healthcheck:
+      test: ["CMD", "ipfs", "dag", "stat", "/ipfs/QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 volumes:
   pgdata:
   redisdata:
+  hardhat-data:
+  ipfs-data:
+  ipfs-staging:
 EOF
     print_success "Created: $docker_compose_file"
   fi
@@ -600,7 +706,7 @@ echo -e "\${BLUE}[${PROJECT_NAME}]${NC} Starting all containerized services..."
 cd "\${PROJECT_ROOT}/docker" && docker compose up -d
 
 # Check if all containers are running
-if [ \$(docker ps --filter "name=${PROJECT_SLUG}" --format '{{.Names}}' | wc -l) -lt 5 ]; then
+if [ \$(docker ps --filter "name=${PROJECT_SLUG}" --format '{{.Names}}' | wc -l) -lt 8 ]; then
   echo -e "\${YELLOW}[WARNING]${NC} Not all containers are running. Check logs for errors:"
   echo "  docker logs ${PROJECT_SLUG}_postgres"
   echo "  docker logs ${PROJECT_SLUG}_api"
@@ -614,18 +720,23 @@ echo "  → API Docs:    http://localhost:8000/api/docs/"
 echo "  → PostgreSQL:  localhost:5432 (username: ${PROJECT_SLUG}, password: in .env file)"
 echo "  → Redis:       localhost:6379"
 echo "  → RabbitMQ:    localhost:5672 (admin: http://localhost:15672)"
+echo "  → Hardhat Node: localhost:8546 (RPC endpoint)"
+echo "  → IPFS Node:   localhost:5001 (API), localhost:8080 (Gateway)"
 
 echo -e "\${BLUE}[INFO]${NC} Container Logs:"
 echo "  → API:       docker logs -f ${PROJECT_SLUG}_api"
 echo "  → Worker:    docker logs -f ${PROJECT_SLUG}_worker"
 echo "  → Scheduler: docker logs -f ${PROJECT_SLUG}_scheduler"
 echo "  → Database:  docker logs -f ${PROJECT_SLUG}_postgres"
+echo "  → Hardhat:   docker logs -f ${PROJECT_SLUG}_hardhat_node"
+echo "  → IPFS:      docker logs -f ${PROJECT_SLUG}_ipfs_node"
 
 echo -e "\${BLUE}[INFO]${NC} Development Commands:"
 echo "  → Start Next.js App:  cd app && npm run dev"
 echo "  → Run Django Shell:   docker exec -it ${PROJECT_SLUG}_api python manage.py shell"
 echo "  → Run Migrations:     docker exec -it ${PROJECT_SLUG}_api python manage.py migrate"
 echo "  → Create Superuser:   docker exec -it ${PROJECT_SLUG}_api python manage.py createsuperuser"
+echo "  → Deploy Contract:    docker exec -it ${PROJECT_SLUG}_contract_deployer"
 echo "  → Stop All Services:  cd docker && docker compose down"
 EOF
     chmod +x "$run_script"
@@ -646,6 +757,8 @@ show_next_steps() {
   echo "   • PostgreSQL:  localhost:5432 (username: ${PROJECT_SLUG}, password in .env file)"
   echo "   • Redis:       localhost:6379"
   echo "   • RabbitMQ:    localhost:5672 (admin UI: http://localhost:15672)"
+  echo "   • Hardhat Node: localhost:8546 (RPC endpoint)"
+  echo "   • IPFS Node:   localhost:5001 (API), localhost:8080 (Gateway)"
   echo ""
   echo "3. Development tools:"
   echo "   • Start Next.js app:  cd app && npm run dev"

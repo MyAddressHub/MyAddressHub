@@ -32,6 +32,12 @@ class Address(models.Model):
         ]
     )
     
+    # Blockchain storage fields
+    blockchain_tx_hash = models.CharField(max_length=66, blank=True, null=True, help_text="Blockchain transaction hash")
+    blockchain_block_number = models.BigIntegerField(blank=True, null=True, help_text="Block number where address was stored")
+    ipfs_hash = models.CharField(max_length=100, blank=True, null=True, help_text="IPFS hash for additional data")
+    is_stored_on_blockchain = models.BooleanField(default=False, help_text="Whether address is stored on blockchain")
+    
     # Metadata
     is_default = models.BooleanField(default=False, help_text="Mark as default address")
     is_active = models.BooleanField(default=True, help_text="Address is active")

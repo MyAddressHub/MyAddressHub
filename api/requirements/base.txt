@@ -40,3 +40,9 @@ argon2-cffi==23.1.0
 # Storage
 django-storages==1.14.2
 boto3==1.28.53 
+
+# Blockchain dependencies
+web3==6.11.3
+ipfshttpclient==0.7.0
+eth-account==0.9.0
+eth-utils==2.2.0 

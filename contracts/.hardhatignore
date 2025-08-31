@@ -1,0 +1,24 @@
+node_modules/
+cache/
+artifacts/
+coverage/
+coverage.json
+typechain/
+typechain-types/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Specifically exclude problematic eth-gas-reporter files
+node_modules/eth-gas-reporter/mock/contracts/
+node_modules/eth-gas-reporter/
+**/eth-gas-reporter/
+
+# Exclude any other mock contracts
+**/mock/contracts/
+**/test/contracts/
