@@ -4,6 +4,7 @@ Address serializers for MyAddressHub.
 
 from rest_framework import serializers
 from .models import Address
+from .blockchain import blockchain_manager
 
 
 class AddressBreakdownSerializer(serializers.Serializer):
@@ -21,6 +22,8 @@ class BlockchainInfoSerializer(serializers.Serializer):
     blockchain_tx_hash = serializers.CharField(allow_null=True, allow_blank=True)
     blockchain_block_number = serializers.IntegerField(allow_null=True)
     ipfs_hash = serializers.CharField(allow_null=True, allow_blank=True)
+    blockchain_data = serializers.DictField(allow_null=True)
+    ipfs_metadata = serializers.DictField(allow_null=True)
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -28,6 +31,13 @@ class AddressSerializer(serializers.ModelSerializer):
     address_breakdown = AddressBreakdownSerializer(source='*', read_only=True)
     full_address = serializers.CharField(read_only=True)
     blockchain_info = BlockchainInfoSerializer(source='*', read_only=True)
+    
+    # Address fields are now read-only properties from blockchain
+    address = serializers.CharField(read_only=True)
+    street = serializers.CharField(read_only=True)
+    suburb = serializers.CharField(read_only=True)
+    state = serializers.CharField(read_only=True)
+    postcode = serializers.CharField(read_only=True)
     
     class Meta:
         model = Address
@@ -37,20 +47,12 @@ class AddressSerializer(serializers.ModelSerializer):
             'address_breakdown', 'full_address', 'blockchain_info',
             'is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'is_stored_on_blockchain', 
-                           'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'address', 'street', 'suburb', 'state', 'postcode', 
+                           'is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash']
     
     def validate(self, attrs):
         """Custom validation for address data."""
-        # Ensure at least one field is provided for address breakdown
-        address_fields = ['address', 'street', 'suburb', 'state', 'postcode']
-        provided_fields = [field for field in address_fields if attrs.get(field)]
-        
-        if not provided_fields:
-            raise serializers.ValidationError(
-                "At least one address field (address, street, suburb, state, postcode) must be provided."
-            )
-        
+        # For updates, we don't validate address fields since they're read-only
         return attrs
     
     def create(self, validated_data):
@@ -62,6 +64,13 @@ class AddressSerializer(serializers.ModelSerializer):
 class AddressCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating addresses."""
     
+    # Address fields for creation
+    address = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    street = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    suburb = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    state = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    postcode = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    
     class Meta:
         model = Address
         fields = [
@@ -71,7 +80,7 @@ class AddressCreateSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         """Custom validation for address creation."""
-        # Ensure at least one field is provided for address breakdown
+        # Ensure at least one address field is provided
         address_fields = ['address', 'street', 'suburb', 'state', 'postcode']
         provided_fields = [field for field in address_fields if attrs.get(field)]
         
@@ -84,12 +93,81 @@ class AddressCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Create address and set user."""
-        validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
+        # Extract address data for blockchain storage
+        address_data = {
+            'address': validated_data.pop('address', ''),
+            'street': validated_data.pop('street', ''),
+            'suburb': validated_data.pop('suburb', ''),
+            'state': validated_data.pop('state', ''),
+            'postcode': validated_data.pop('postcode', '')
+        }
+        
+        # Create the address instance with explicit user assignment
+        address = Address()
+        address.user = self.context['request'].user
+        address.address_name = validated_data.get('address_name', '')
+        address.is_default = validated_data.get('is_default', False)
+        address.is_active = validated_data.get('is_active', True)
+        
+        # Save the address first (without blockchain storage)
+        address.save()
+        
+        # Store address data on blockchain separately
+        if blockchain_manager.is_connected():
+            try:
+                # Prepare complete address data for blockchain
+                blockchain_data = {
+                    'id': str(address.id),
+                    'address_name': address.address_name,
+                    'is_default': address.is_default,
+                    'is_active': address.is_active,
+                    **address_data
+                }
+                
+                # Store on blockchain
+                result = blockchain_manager.store_address_on_blockchain(blockchain_data, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+                
+                if result.get('success'):
+                    # Update blockchain metadata
+                    address.blockchain_tx_hash = result.get('transaction_hash')
+                    address.blockchain_block_number = result.get('block_number')
+                    address.is_stored_on_blockchain = True
+                    
+                    # Store additional metadata on IPFS
+                    metadata = {
+                        'user_id': address.user.id,
+                        'user_email': address.user.email,
+                        'created_at': address.created_at.isoformat(),
+                        'updated_at': address.updated_at.isoformat()
+                    }
+                    
+                    ipfs_hash = blockchain_manager.store_on_ipfs(metadata)
+                    if ipfs_hash:
+                        address.ipfs_hash = ipfs_hash
+                    
+                    # Save blockchain metadata without triggering save method again
+                    Address.objects.filter(pk=address.pk).update(
+                        blockchain_tx_hash=address.blockchain_tx_hash,
+                        blockchain_block_number=address.blockchain_block_number,
+                        is_stored_on_blockchain=address.is_stored_on_blockchain,
+                        ipfs_hash=address.ipfs_hash
+                    )
+                    
+            except Exception as e:
+                print(f"Warning: Failed to store address on blockchain: {e}")
+        
+        return address
 
 
 class AddressUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating addresses."""
+    
+    # Address fields for updates
+    address = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    street = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    suburb = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    state = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    postcode = serializers.CharField(max_length=10, required=False, allow_blank=True)
     
     class Meta:
         model = Address
@@ -100,23 +178,81 @@ class AddressUpdateSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         """Custom validation for address updates."""
-        # Ensure at least one field is provided for address breakdown
+        # Ensure at least one field is provided (metadata or address data)
+        metadata_fields = ['address_name', 'is_default', 'is_active']
         address_fields = ['address', 'street', 'suburb', 'state', 'postcode']
-        provided_fields = [field for field in address_fields if attrs.get(field)]
         
-        if not provided_fields:
-            # Check if any address fields are already set
-            instance = self.instance
-            existing_fields = [
-                instance.address, instance.street, instance.suburb, 
-                instance.state, instance.postcode
-            ]
-            if not any(existing_fields):
-                raise serializers.ValidationError(
-                    "At least one address field (address, street, suburb, state, postcode) must be provided."
-                )
+        provided_metadata = [field for field in metadata_fields if field in attrs]
+        provided_address = [field for field in address_fields if field in attrs]
+        
+        if not provided_metadata and not provided_address:
+            raise serializers.ValidationError(
+                "At least one field must be provided for update."
+            )
         
         return attrs
+    
+    def update(self, instance, validated_data):
+        """Update address and handle blockchain storage."""
+        # Extract address data for blockchain storage
+        address_data = {}
+        for field in ['address', 'street', 'suburb', 'state', 'postcode']:
+            if field in validated_data:
+                address_data[field] = validated_data.pop(field)
+        
+        # Update metadata fields (excluding user to avoid the error)
+        for attr, value in validated_data.items():
+            if attr != 'user':  # Don't update user field
+                setattr(instance, attr, value)
+        
+        # Save the instance first (without blockchain storage)
+        instance.save()
+        
+        # Store address data on blockchain separately if provided
+        if address_data and blockchain_manager.is_connected():
+            try:
+                # Prepare complete address data for blockchain
+                blockchain_data = {
+                    'id': str(instance.id),
+                    'address_name': instance.address_name,
+                    'is_default': instance.is_default,
+                    'is_active': instance.is_active,
+                    **address_data
+                }
+                
+                # Store on blockchain
+                result = blockchain_manager.store_address_on_blockchain(blockchain_data, "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+                
+                if result.get('success'):
+                    # Update blockchain metadata
+                    instance.blockchain_tx_hash = result.get('transaction_hash')
+                    instance.blockchain_block_number = result.get('block_number')
+                    instance.is_stored_on_blockchain = True
+                    
+                    # Store additional metadata on IPFS
+                    metadata = {
+                        'user_id': instance.user.id,
+                        'user_email': instance.user.email,
+                        'created_at': instance.created_at.isoformat(),
+                        'updated_at': instance.updated_at.isoformat()
+                    }
+                    
+                    ipfs_hash = blockchain_manager.store_on_ipfs(metadata)
+                    if ipfs_hash:
+                        instance.ipfs_hash = ipfs_hash
+                    
+                    # Save blockchain metadata without triggering save method again
+                    Address.objects.filter(pk=instance.pk).update(
+                        blockchain_tx_hash=instance.blockchain_tx_hash,
+                        blockchain_block_number=instance.blockchain_block_number,
+                        is_stored_on_blockchain=instance.is_stored_on_blockchain,
+                        ipfs_hash=instance.ipfs_hash
+                    )
+                    
+            except Exception as e:
+                print(f"Warning: Failed to store address on blockchain: {e}")
+        
+        return instance
 
 
 class AddressBreakdownResponseSerializer(serializers.Serializer):

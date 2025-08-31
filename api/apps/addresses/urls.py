@@ -21,6 +21,8 @@ urlpatterns = [
     
     # Blockchain endpoints
     path('blockchain-status/', views.blockchain_status, name='blockchain-status'),
+    path('blockchain/addresses/', views.get_user_addresses_from_blockchain, name='get-user-addresses-from-blockchain'),
+    path('blockchain/address/<uuid:address_id>/', views.get_address_from_blockchain, name='get-address-from-blockchain'),
     
     # Organization features
     path('lookup/<uuid:address_uuid>/', views.lookup_address_by_uuid, name='lookup-address-by-uuid'),

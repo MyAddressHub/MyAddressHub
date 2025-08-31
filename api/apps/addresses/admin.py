@@ -10,28 +10,31 @@ from .models import Address
 class AddressAdmin(admin.ModelAdmin):
     """Admin interface for Address model."""
     list_display = [
-        'id', 'user', 'address_name', 'suburb', 'state', 'postcode',
-        'is_default', 'is_active', 'created_at'
+        'id', 'user', 'address_name', 'is_default', 'is_active', 
+        'is_stored_on_blockchain', 'created_at'
     ]
     list_filter = [
-        'is_default', 'is_active', 'state', 'created_at', 'updated_at'
+        'is_default', 'is_active', 'is_stored_on_blockchain', 'created_at', 'updated_at'
     ]
     search_fields = [
-        'user__email', 'user__username', 'address_name', 'address',
-        'street', 'suburb', 'state', 'postcode'
+        'user__email', 'user__username', 'address_name'
     ]
-    readonly_fields = ['id', 'created_at', 'updated_at']
+    readonly_fields = [
+        'id', 'created_at', 'updated_at', 'blockchain_tx_hash', 
+        'blockchain_block_number', 'ipfs_hash'
+    ]
     list_select_related = ['user']
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('id', 'user', 'address_name')
         }),
-        ('Address Details', {
-            'fields': ('address', 'street', 'suburb', 'state', 'postcode')
-        }),
         ('Status', {
             'fields': ('is_default', 'is_active')
+        }),
+        ('Blockchain Information', {
+            'fields': ('is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'),
+            'classes': ('collapse',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
