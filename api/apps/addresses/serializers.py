@@ -15,19 +15,30 @@ class AddressBreakdownSerializer(serializers.Serializer):
     postcode = serializers.CharField(max_length=10)
 
 
+class BlockchainInfoSerializer(serializers.Serializer):
+    """Serializer for blockchain information."""
+    is_stored_on_blockchain = serializers.BooleanField()
+    blockchain_tx_hash = serializers.CharField(allow_null=True, allow_blank=True)
+    blockchain_block_number = serializers.IntegerField(allow_null=True)
+    ipfs_hash = serializers.CharField(allow_null=True, allow_blank=True)
+
+
 class AddressSerializer(serializers.ModelSerializer):
     """Serializer for Address model."""
     address_breakdown = AddressBreakdownSerializer(source='*', read_only=True)
     full_address = serializers.CharField(read_only=True)
+    blockchain_info = BlockchainInfoSerializer(source='*', read_only=True)
     
     class Meta:
         model = Address
         fields = [
             'id', 'address_name', 'address', 'street', 'suburb', 'state', 'postcode',
             'is_default', 'is_active', 'created_at', 'updated_at',
-            'address_breakdown', 'full_address'
+            'address_breakdown', 'full_address', 'blockchain_info',
+            'is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'is_stored_on_blockchain', 
+                           'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash']
     
     def validate(self, attrs):
         """Custom validation for address data."""
@@ -126,10 +137,12 @@ class OrganizationAddressLookupSerializer(serializers.ModelSerializer):
     Only shows basic info without revealing full address details.
     """
     address_breakdown = AddressBreakdownSerializer(source='*', read_only=True)
+    blockchain_info = BlockchainInfoSerializer(source='*', read_only=True)
+    
     class Meta:
         model = Address
         fields = [
             'id', 'address_name', 'is_default', 'is_active', 
-            'created_at', 'updated_at', 'address_breakdown'
+            'created_at', 'updated_at', 'address_breakdown', 'blockchain_info'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at'] 

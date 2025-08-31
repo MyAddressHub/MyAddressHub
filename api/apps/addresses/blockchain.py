@@ -25,7 +25,13 @@ class BlockchainAddressManager:
         
         # Initialize IPFS client
         try:
-            self.ipfs_client = ipfshttpclient.connect(self.ipfs_api_url)
+            # Try different IPFS connection methods
+            if self.ipfs_api_url.startswith('http'):
+                # Use HTTP API
+                self.ipfs_client = ipfshttpclient.connect(self.ipfs_api_url)
+            else:
+                # Try default connection
+                self.ipfs_client = ipfshttpclient.connect()
         except Exception as e:
             print(f"Warning: Could not connect to IPFS: {e}")
             self.ipfs_client = None
@@ -46,11 +52,28 @@ class BlockchainAddressManager:
     def _load_contract_abi(self) -> Optional[list]:
         """Load contract ABI from file."""
         try:
-            abi_path = os.path.join(settings.BASE_DIR, 'contracts', 'AddressHub.json')
-            with open(abi_path, 'r') as f:
-                return json.load(f)['abi']
-        except FileNotFoundError:
-            print("Warning: Contract ABI file not found")
+            # Try multiple possible locations for the contract ABI
+            possible_paths = [
+                os.path.join(settings.BASE_DIR, 'contracts', 'artifacts', 'contracts', 'AddressHub.sol', 'AddressHub.json'),
+                os.path.join(settings.BASE_DIR, '..', 'contracts', 'artifacts', 'contracts', 'AddressHub.sol', 'AddressHub.json'),
+                os.path.join(settings.BASE_DIR, 'contracts', 'AddressHub.json'),
+                os.path.join(settings.BASE_DIR, '..', 'contracts', 'AddressHub.json'),
+            ]
+            
+            for abi_path in possible_paths:
+                if os.path.exists(abi_path):
+                    with open(abi_path, 'r') as f:
+                        contract_data = json.load(f)
+                        if 'abi' in contract_data:
+                            return contract_data['abi']
+                        else:
+                            print(f"Warning: No ABI found in {abi_path}")
+            
+            print("Warning: Contract ABI file not found in any expected location")
+            return None
+            
+        except Exception as e:
+            print(f"Warning: Error loading contract ABI: {e}")
             return None
     
     def store_address_on_blockchain(self, address_data: Dict[str, Any], user_wallet: str) -> Dict[str, Any]:

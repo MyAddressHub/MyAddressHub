@@ -18,6 +18,7 @@ from .serializers import (
     OrganizationAddressLookupSerializer
 )
 from apps.accounts.models import AddressPermission, Organization, LookupRecord
+from .blockchain import blockchain_manager
 
 
 class AddressListView(generics.ListCreateAPIView):
@@ -48,7 +49,7 @@ class AddressListView(generics.ListCreateAPIView):
         return AddressSerializer
     
     def create(self, request, *args, **kwargs):
-        """Override create to return consistent response format."""
+        """Override create to return consistent response format with blockchain info."""
         # Only individual users can create addresses
         if not request.user.profile.is_individual:
             return Response({
@@ -60,9 +61,20 @@ class AddressListView(generics.ListCreateAPIView):
         if serializer.is_valid():
             address = serializer.save()
             response_serializer = AddressSerializer(address)
+            
+            # Add blockchain status to response
+            blockchain_status = {
+                'blockchain_available': blockchain_manager.is_connected(),
+                'stored_on_blockchain': address.is_stored_on_blockchain,
+                'transaction_hash': address.blockchain_tx_hash,
+                'block_number': address.blockchain_block_number,
+                'ipfs_hash': address.ipfs_hash
+            }
+            
             return Response({
                 'success': True,
                 'data': response_serializer.data,
+                'blockchain_status': blockchain_status,
                 'message': 'Address created successfully'
             }, status=status.HTTP_201_CREATED)
         return Response({
@@ -100,16 +112,16 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
         return AddressSerializer
     
     def perform_destroy(self, instance):
-        """Soft delete the address instead of hard delete."""
+        """Soft delete the address and remove from blockchain."""
         # Only individual users can delete their own addresses
         if not self.request.user.profile.is_individual or instance.user != self.request.user:
             raise permissions.PermissionDenied("You can only delete your own addresses")
         
-        instance.is_active = False
-        instance.save()
+        # Use the model's soft_delete method which handles blockchain deletion
+        instance.soft_delete()
     
     def update(self, request, *args, **kwargs):
-        """Override update to return consistent response format."""
+        """Override update to return consistent response format with blockchain info."""
         # Only individual users can update their own addresses
         instance = self.get_object()
         if not request.user.profile.is_individual or instance.user != request.user:
@@ -123,9 +135,20 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
         if serializer.is_valid():
             address = serializer.save()
             response_serializer = AddressSerializer(address)
+            
+            # Add blockchain status to response
+            blockchain_status = {
+                'blockchain_available': blockchain_manager.is_connected(),
+                'stored_on_blockchain': address.is_stored_on_blockchain,
+                'transaction_hash': address.blockchain_tx_hash,
+                'block_number': address.blockchain_block_number,
+                'ipfs_hash': address.ipfs_hash
+            }
+            
             return Response({
                 'success': True,
                 'data': response_serializer.data,
+                'blockchain_status': blockchain_status,
                 'message': 'Address updated successfully'
             })
         return Response({
@@ -134,11 +157,22 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
         }, status=status.HTTP_400_BAD_REQUEST)
     
     def destroy(self, request, *args, **kwargs):
-        """Override destroy to return consistent response format."""
+        """Override destroy to return consistent response format with blockchain info."""
         instance = self.get_object()
         self.perform_destroy(instance)
+        
+        # Add blockchain status to response
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'stored_on_blockchain': instance.is_stored_on_blockchain,
+            'transaction_hash': instance.blockchain_tx_hash,
+            'block_number': instance.blockchain_block_number,
+            'ipfs_hash': instance.ipfs_hash
+        }
+        
         return Response({
             'success': True,
+            'blockchain_status': blockchain_status,
             'message': 'Address deleted successfully'
         }, status=status.HTTP_200_OK)
 
@@ -196,9 +230,20 @@ class AddressBreakdownView(APIView):
                 }, status=status.HTTP_403_FORBIDDEN)
             
             serializer = AddressBreakdownSerializer(address)
+            
+            # Add blockchain status to response
+            blockchain_status = {
+                'blockchain_available': blockchain_manager.is_connected(),
+                'stored_on_blockchain': address.is_stored_on_blockchain,
+                'transaction_hash': address.blockchain_tx_hash,
+                'block_number': address.blockchain_block_number,
+                'ipfs_hash': address.ipfs_hash
+            }
+            
             return Response({
                 'success': True,
-                'data': serializer.data
+                'data': serializer.data,
+                'blockchain_status': blockchain_status
             })
             
         except Http404:
@@ -236,9 +281,18 @@ def user_addresses(request):
             addresses = Address.objects.none()
         
         serializer = AddressSerializer(addresses, many=True)
+        
+        # Add blockchain status to response
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'total_addresses': len(serializer.data),
+            'addresses_on_blockchain': sum(1 for addr in addresses if addr.is_stored_on_blockchain)
+        }
+        
         return Response({
             'success': True,
             'data': serializer.data,
+            'blockchain_status': blockchain_status,
             'count': len(serializer.data)
         })
         
@@ -276,10 +330,21 @@ def set_default_address(request, address_id):
         address.save()
         
         serializer = AddressSerializer(address)
+        
+        # Add blockchain status to response
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'stored_on_blockchain': address.is_stored_on_blockchain,
+            'transaction_hash': address.blockchain_tx_hash,
+            'block_number': address.blockchain_block_number,
+            'ipfs_hash': address.ipfs_hash
+        }
+        
         return Response({
             'success': True,
             'message': f'Address "{address.address_name}" set as default',
-            'data': serializer.data
+            'data': serializer.data,
+            'blockchain_status': blockchain_status
         })
         
     except Http404:
@@ -322,9 +387,20 @@ def default_address(request):
             }, status=status.HTTP_404_NOT_FOUND)
         
         serializer = OrganizationAddressLookupSerializer(address)
+        
+        # Add blockchain status to response
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'stored_on_blockchain': address.is_stored_on_blockchain,
+            'transaction_hash': address.blockchain_tx_hash,
+            'block_number': address.blockchain_block_number,
+            'ipfs_hash': address.ipfs_hash
+        }
+        
         return Response({
             'success': True,
-            'data': serializer.data
+            'data': serializer.data,
+            'blockchain_status': blockchain_status
         })
         
     except Exception as e:
@@ -401,9 +477,20 @@ def lookup_address_by_uuid(request, address_uuid):
         )
         
         serializer = OrganizationAddressLookupSerializer(address)
+        
+        # Add blockchain status to response
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'stored_on_blockchain': address.is_stored_on_blockchain,
+            'transaction_hash': address.blockchain_tx_hash,
+            'block_number': address.blockchain_block_number,
+            'ipfs_hash': address.ipfs_hash
+        }
+        
         return Response({
             'success': True,
-            'data': serializer.data
+            'data': serializer.data,
+            'blockchain_status': blockchain_status
         })
         
     except Http404:
@@ -670,6 +757,12 @@ def test_address_data(request):
                     'suburb': address.suburb,
                     'state': address.state,
                     'postcode': address.postcode,
+                    'blockchain_info': {
+                        'is_stored_on_blockchain': address.is_stored_on_blockchain,
+                        'blockchain_tx_hash': address.blockchain_tx_hash,
+                        'blockchain_block_number': address.blockchain_block_number,
+                        'ipfs_hash': address.ipfs_hash
+                    }
                 }
             })
         else:
@@ -720,6 +813,50 @@ def organization_lookup_history(request):
             'data': lookup_data,
             'count': len(lookup_data)
         })
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def blockchain_status(request):
+    """
+    Get blockchain connection status and statistics.
+    """
+    try:
+        user = request.user
+        
+        if not user.profile.is_individual:
+            return Response({
+                'success': False,
+                'error': 'Only individual users can view blockchain status'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get user's addresses
+        addresses = Address.objects.filter(user=user, is_active=True)
+        
+        # Calculate blockchain statistics
+        total_addresses = addresses.count()
+        addresses_on_blockchain = addresses.filter(is_stored_on_blockchain=True).count()
+        
+        blockchain_status = {
+            'blockchain_available': blockchain_manager.is_connected(),
+            'total_addresses': total_addresses,
+            'addresses_on_blockchain': addresses_on_blockchain,
+            'blockchain_percentage': round((addresses_on_blockchain / total_addresses * 100) if total_addresses > 0 else 0, 2),
+            'contract_address': blockchain_manager.contract_address if blockchain_manager.contract else None,
+            'polygon_rpc_url': blockchain_manager.polygon_rpc_url,
+            'ipfs_available': blockchain_manager.ipfs_client is not None
+        }
+        
+        return Response({
+            'success': True,
+            'data': blockchain_status
+        })
+        
     except Exception as e:
         return Response({
             'success': False,

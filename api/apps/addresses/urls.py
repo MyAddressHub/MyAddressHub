@@ -19,6 +19,9 @@ urlpatterns = [
     path('<uuid:address_id>/breakdown/', views.AddressBreakdownView.as_view(), name='address-breakdown'),
     path('test-data/', views.test_address_data, name='test-address-data'),
     
+    # Blockchain endpoints
+    path('blockchain-status/', views.blockchain_status, name='blockchain-status'),
+    
     # Organization features
     path('lookup/<uuid:address_uuid>/', views.lookup_address_by_uuid, name='lookup-address-by-uuid'),
     path('lookup-history/', views.organization_lookup_history, name='organization-lookup-history'),
