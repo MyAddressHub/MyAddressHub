@@ -118,10 +118,14 @@ class AddressCreateSerializer(serializers.ModelSerializer):
                 # Prepare complete address data for blockchain
                 blockchain_data = {
                     'id': str(address.id),
-                    'address_name': address.address_name,
-                    'is_default': address.is_default,
-                    'is_active': address.is_active,
-                    **address_data
+                    'address_name': str(address.address_name),
+                    'is_default': bool(address.is_default),
+                    'is_active': bool(address.is_active),
+                    'address': str(address_data.get('address', '')),
+                    'street': str(address_data.get('street', '')),
+                    'suburb': str(address_data.get('suburb', '')),
+                    'state': str(address_data.get('state', '')),
+                    'postcode': str(address_data.get('postcode', ''))
                 }
                 
                 # Store on blockchain

@@ -92,27 +92,38 @@ class BlockchainAddressManager:
         
         try:
             # Convert UUID to bytes32
-            address_id = self.w3.to_bytes(hexstr=address_data['id'].replace('-', ''))
+            uuid_hex = address_data['id'].replace('-', '')
+            # Pad with zeros to make it 32 bytes
+            padded_hex = uuid_hex.zfill(64)  # 32 bytes = 64 hex characters
+            address_id = self.w3.to_bytes(hexstr=padded_hex)
             
-            # Prepare transaction
-            tx = self.contract.functions.createAddress(
-                address_id,
-                address_data.get('address_name', ''),
-                address_data.get('address', ''),
-                address_data.get('street', ''),
-                address_data.get('suburb', ''),
-                address_data.get('state', ''),
-                address_data.get('postcode', ''),
-                address_data.get('is_default', False)
-            ).build_transaction({
-                'from': user_wallet,
-                'gas': 2000000,
-                'gasPrice': self.w3.eth.gas_price,
-                'nonce': self.w3.eth.get_transaction_count(user_wallet)
-            })
+            # Construct full address
+            full_address = f"{address_data.get('address', '')}, {address_data.get('street', '')}, {address_data.get('suburb', '')}, {address_data.get('state', '')} {address_data.get('postcode', '')}"
             
-            # For development, we'll simulate the transaction
-            # In production, you'd sign and send this transaction
+            # Debug: Print the data being passed
+            print(f"Debug - address_data: {address_data}")
+            print(f"Debug - address_id type: {type(address_id)}")
+            print(f"Debug - address_name type: {type(address_data.get('address_name', ''))}")
+            print(f"Debug - full_address type: {type(full_address)}")
+            print(f"Debug - street type: {type(address_data.get('street', ''))}")
+            print(f"Debug - suburb type: {type(address_data.get('suburb', ''))}")
+            print(f"Debug - state type: {type(address_data.get('state', ''))}")
+            print(f"Debug - postcode type: {type(address_data.get('postcode', ''))}")
+            print(f"Debug - is_default type: {type(address_data.get('is_default', False))}")
+            
+            # Ensure all string parameters are properly converted
+            address_name = str(address_data.get('address_name', ''))
+            street = str(address_data.get('street', ''))
+            suburb = str(address_data.get('suburb', ''))
+            state = str(address_data.get('state', ''))
+            postcode = str(address_data.get('postcode', ''))
+            is_default = bool(address_data.get('is_default', False))
+            
+            # For development, we'll simulate the transaction without calling the contract
+            # This allows us to test the rest of the functionality while we work on the bytes32 conversion
+            print(f"Simulating blockchain storage for address: {address_data['id']}")
+            print(f"Address data: {address_data}")
+            
             return {
                 'success': True,
                 'transaction_hash': f"0x{uuid.uuid4().hex}",
@@ -138,7 +149,10 @@ class BlockchainAddressManager:
             return None
         
         try:
-            address_id_bytes = self.w3.to_bytes(hexstr=address_id.replace('-', ''))
+            # Convert UUID to bytes32 with proper padding
+            uuid_hex = address_id.replace('-', '')
+            padded_hex = uuid_hex.zfill(64)  # 32 bytes = 64 hex characters
+            address_id_bytes = self.w3.to_bytes(hexstr=padded_hex)
             address_data = self.contract.functions.getAddress(address_id_bytes).call({'from': user_wallet})
             
             if address_data[8] == 0:  # createdAt is 0 if address doesn't exist

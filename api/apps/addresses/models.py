@@ -24,7 +24,14 @@ class Address(models.Model):
     ipfs_hash = models.CharField(max_length=100, blank=True, null=True, help_text="IPFS hash for additional data")
     is_stored_on_blockchain = models.BooleanField(default=False, help_text="Whether address is stored on blockchain")
     
-    # Metadata only - address data is stored on blockchain
+    # Address data fields - temporarily stored in database until blockchain is fully configured
+    address = models.CharField(max_length=255, blank=True, null=True, help_text="Address line")
+    street = models.CharField(max_length=255, blank=True, null=True, help_text="Street name")
+    suburb = models.CharField(max_length=255, blank=True, null=True, help_text="Suburb/City")
+    state = models.CharField(max_length=100, blank=True, null=True, help_text="State/Province")
+    postcode = models.CharField(max_length=10, blank=True, null=True, help_text="Postal code")
+    
+    # Metadata only
     is_default = models.BooleanField(default=False, help_text="Mark as default address")
     is_active = models.BooleanField(default=True, help_text="Address is active")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -245,36 +252,46 @@ class Address(models.Model):
         # Delete from blockchain
         self.delete_from_blockchain()
     
-    # Address data properties - these fetch from blockchain
+    # Address data properties - these fetch from blockchain or database
     @property
     def address(self):
-        """Get address from blockchain."""
+        """Get address from blockchain or database."""
         blockchain_data = self.blockchain_data
-        return blockchain_data.get('address', '') if blockchain_data else ''
+        if blockchain_data and blockchain_data.get('address'):
+            return blockchain_data.get('address', '')
+        return self.address or ''
     
     @property
     def street(self):
-        """Get street from blockchain."""
+        """Get street from blockchain or database."""
         blockchain_data = self.blockchain_data
-        return blockchain_data.get('street', '') if blockchain_data else ''
+        if blockchain_data and blockchain_data.get('street'):
+            return blockchain_data.get('street', '')
+        return self.street or ''
     
     @property
     def suburb(self):
-        """Get suburb from blockchain."""
+        """Get suburb from blockchain or database."""
         blockchain_data = self.blockchain_data
-        return blockchain_data.get('suburb', '') if blockchain_data else ''
+        if blockchain_data and blockchain_data.get('suburb'):
+            return blockchain_data.get('suburb', '')
+        return self.suburb or ''
     
     @property
     def state(self):
-        """Get state from blockchain."""
+        """Get state from blockchain or database."""
         blockchain_data = self.blockchain_data
-        return blockchain_data.get('state', '') if blockchain_data else ''
+        if blockchain_data and blockchain_data.get('state'):
+            return blockchain_data.get('state', '')
+        return self.state or ''
     
     @property
     def postcode(self):
-        """Get postcode from blockchain."""
+        """Get postcode from blockchain or database."""
         blockchain_data = self.blockchain_data
-        return blockchain_data.get('postcode', '') if blockchain_data else ''
+        if blockchain_data and blockchain_data.get('postcode'):
+            return blockchain_data.get('postcode', '')
+        return self.postcode or ''
     
     @property
     def full_address(self):
