@@ -45,4 +45,7 @@ boto3==1.28.53
 web3==6.11.3
 ipfshttpclient==0.7.0
 eth-account==0.9.0
-eth-utils==2.2.0 
+eth-utils==2.2.0
+
+# Encryption
+cryptography==41.0.7 

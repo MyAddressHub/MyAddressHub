@@ -7,6 +7,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from .blockchain import blockchain_manager
+from .encryption import encrypt_address_data, decrypt_address_data
 
 
 class Address(models.Model):
@@ -23,13 +24,14 @@ class Address(models.Model):
     blockchain_block_number = models.BigIntegerField(blank=True, null=True, help_text="Block number where address was stored")
     ipfs_hash = models.CharField(max_length=100, blank=True, null=True, help_text="IPFS hash for additional data")
     is_stored_on_blockchain = models.BooleanField(default=False, help_text="Whether address is stored on blockchain")
+    last_synced_at = models.DateTimeField(blank=True, null=True, help_text="When this address was last synced to blockchain")
     
-    # Address data fields - temporarily stored in database until blockchain is fully configured
-    address = models.CharField(max_length=255, blank=True, null=True, help_text="Address line")
-    street = models.CharField(max_length=255, blank=True, null=True, help_text="Street name")
-    suburb = models.CharField(max_length=255, blank=True, null=True, help_text="Suburb/City")
-    state = models.CharField(max_length=100, blank=True, null=True, help_text="State/Province")
-    postcode = models.CharField(max_length=10, blank=True, null=True, help_text="Postal code")
+    # Address data fields - encrypted in database for security
+    address = models.TextField(blank=True, null=True, help_text="Encrypted address line")
+    street = models.TextField(blank=True, null=True, help_text="Encrypted street name")
+    suburb = models.TextField(blank=True, null=True, help_text="Encrypted suburb/city")
+    state = models.TextField(blank=True, null=True, help_text="Encrypted state/province")
+    postcode = models.TextField(blank=True, null=True, help_text="Encrypted postal code")
     
     # Metadata only
     is_default = models.BooleanField(default=False, help_text="Mark as default address")
@@ -52,25 +54,44 @@ class Address(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.address_name} - {self.user.email}"
+        try:
+            if hasattr(self, 'user') and self.user:
+                if isinstance(self.user, User):
+                    return f"{self.address_name} - {self.user.email}"
+                elif hasattr(self.user, 'email'):
+                    return f"{self.address_name} - {self.user.email}"
+                else:
+                    return f"{self.address_name} - User ID: {self.user}"
+            elif hasattr(self, 'user_id') and self.user_id:
+                return f"{self.address_name} - User ID: {self.user_id}"
+            else:
+                return f"{self.address_name} - No User"
+        except:
+            return f"{self.address_name} - Unknown User"
     
     def save(self, *args, **kwargs):
         # If this address is being set as default, unset other defaults for this user
         if self.is_default:
             actual_user = None
-            if isinstance(self.user, User):
-                actual_user = self.user
-            elif isinstance(self.user, (str, int)):
-                try:
-                    actual_user = User.objects.get(pk=self.user)
-                except (User.DoesNotExist, ValueError):
-                    print(f"Warning: User with ID '{self.user}' not found or invalid. Cannot unset other default addresses.")
-                    actual_user = None
+            try:
+                # Try to get the user object
+                if hasattr(self, 'user_id') and self.user_id:
+                    actual_user = User.objects.get(pk=self.user_id)
+                elif hasattr(self, 'user') and self.user:
+                    if isinstance(self.user, User):
+                        actual_user = self.user
+                    elif isinstance(self.user, (str, int)):
+                        actual_user = User.objects.get(pk=self.user)
+                    elif hasattr(self.user, 'id'):  # Handle request.user objects
+                        actual_user = self.user
+            except (User.DoesNotExist, ValueError, AttributeError) as e:
+                print(f"Warning: Cannot get user for default address update: {e}")
+                actual_user = None
             
             if actual_user:
                 Address.objects.filter(user=actual_user, is_default=True).exclude(pk=self.pk).update(is_default=False)
             else:
-                print(f"Error: Cannot determine user for default address update. self.user: {self.user}")
+                print(f"Error: Cannot determine user for default address update. self.user: {getattr(self, 'user', 'None')}, self.user_id: {getattr(self, 'user_id', 'None')}")
         
         # Check if this is a new address or if metadata/blockchain data has changed
         is_new = self.pk is None
@@ -93,6 +114,9 @@ class Address(models.Model):
             metadata_changed = True
             blockchain_data_changed = True # New address, so blockchain data is new
 
+        # Encrypt address data before saving
+        self._encrypt_address_data()
+        
         # Save metadata to database first
         super().save(*args, **kwargs)
         
@@ -156,12 +180,39 @@ class Address(models.Model):
                 self.is_stored_on_blockchain = True
                 
                 # Store additional metadata on IPFS
-                metadata = {
-                    'user_id': self.user.id,
-                    'user_email': self.user.email,
-                    'created_at': self.created_at.isoformat(),
-                    'updated_at': self.updated_at.isoformat()
-                }
+                try:
+                    if hasattr(self, 'user_id') and self.user_id:
+                        user_obj = User.objects.get(pk=self.user_id)
+                        user_id = user_obj.id
+                        user_email = user_obj.email
+                    elif hasattr(self, 'user') and self.user:
+                        if isinstance(self.user, User):
+                            user_id = self.user.id
+                            user_email = self.user.email
+                        elif hasattr(self.user, 'id'):
+                            user_id = self.user.id
+                            user_email = getattr(self.user, 'email', '')
+                        else:
+                            user_id = str(self.user)
+                            user_email = ''
+                    else:
+                        user_id = 'unknown'
+                        user_email = ''
+                    
+                    metadata = {
+                        'user_id': user_id,
+                        'user_email': user_email,
+                        'created_at': self.created_at.isoformat(),
+                        'updated_at': self.updated_at.isoformat()
+                    }
+                except Exception as e:
+                    print(f"Warning: Could not get user metadata for IPFS: {e}")
+                    metadata = {
+                        'user_id': 'unknown',
+                        'user_email': '',
+                        'created_at': self.created_at.isoformat(),
+                        'updated_at': self.updated_at.isoformat()
+                    }
                 
                 ipfs_hash = blockchain_manager.store_on_ipfs(metadata)
                 if ipfs_hash:
@@ -254,59 +305,74 @@ class Address(models.Model):
     
     # Address data properties - these fetch from blockchain or database
     @property
-    def address(self):
+    def address_line(self):
         """Get address from blockchain or database."""
         blockchain_data = self.blockchain_data
         if blockchain_data and blockchain_data.get('address'):
             return blockchain_data.get('address', '')
-        return self.address or ''
+        
+        # Get from encrypted database field
+        decrypted_data = self._decrypt_address_data()
+        return decrypted_data.get('address', '')
     
     @property
-    def street(self):
+    def street_name(self):
         """Get street from blockchain or database."""
         blockchain_data = self.blockchain_data
         if blockchain_data and blockchain_data.get('street'):
             return blockchain_data.get('street', '')
-        return self.street or ''
+        
+        # Get from encrypted database field
+        decrypted_data = self._decrypt_address_data()
+        return decrypted_data.get('street', '')
     
     @property
-    def suburb(self):
+    def suburb_name(self):
         """Get suburb from blockchain or database."""
         blockchain_data = self.blockchain_data
         if blockchain_data and blockchain_data.get('suburb'):
             return blockchain_data.get('suburb', '')
-        return self.suburb or ''
+        
+        # Get from encrypted database field
+        decrypted_data = self._decrypt_address_data()
+        return decrypted_data.get('suburb', '')
     
     @property
-    def state(self):
+    def state_name(self):
         """Get state from blockchain or database."""
         blockchain_data = self.blockchain_data
         if blockchain_data and blockchain_data.get('state'):
             return blockchain_data.get('state', '')
-        return self.state or ''
+        
+        # Get from encrypted database field
+        decrypted_data = self._decrypt_address_data()
+        return decrypted_data.get('state', '')
     
     @property
-    def postcode(self):
+    def postal_code(self):
         """Get postcode from blockchain or database."""
         blockchain_data = self.blockchain_data
         if blockchain_data and blockchain_data.get('postcode'):
             return blockchain_data.get('postcode', '')
-        return self.postcode or ''
+        
+        # Get from encrypted database field
+        decrypted_data = self._decrypt_address_data()
+        return decrypted_data.get('postcode', '')
     
     @property
     def full_address(self):
         """Return the complete formatted address from blockchain."""
-        return f"{self.address}, {self.street}, {self.suburb}, {self.state} {self.postcode}"
+        return f"{self.address_line}, {self.street_name}, {self.suburb_name}, {self.state_name} {self.postal_code}"
     
     @property
     def address_breakdown(self):
         """Return address breakdown as a dictionary from blockchain."""
         return {
-            'address': self.address,
-            'street': self.street,
-            'suburb': self.suburb,
-            'state': self.state,
-            'postcode': self.postcode
+            'address': self.address_line,
+            'street': self.street_name,
+            'suburb': self.suburb_name,
+            'state': self.state_name,
+            'postcode': self.postal_code
         }
     
     # Blockchain properties - use database fields for efficiency
@@ -332,6 +398,50 @@ class Address(models.Model):
             return blockchain_manager.get_from_ipfs(self.ipfs_hash)
         except:
             return None
+    
+    def _encrypt_address_data(self):
+        """Encrypt address data before saving to database."""
+        # Only encrypt if we have temporary unencrypted data and it's a string
+        if hasattr(self, '_address') and self._address and isinstance(self._address, str):
+            setattr(self, 'address', encrypt_address_data({'address': self._address})['address'])
+        if hasattr(self, '_street') and self._street and isinstance(self._street, str):
+            setattr(self, 'street', encrypt_address_data({'street': self._street})['street'])
+        if hasattr(self, '_suburb') and self._suburb and isinstance(self._suburb, str):
+            setattr(self, 'suburb', encrypt_address_data({'suburb': self._suburb})['suburb'])
+        if hasattr(self, '_state') and self._state and isinstance(self._state, str):
+            setattr(self, 'state', encrypt_address_data({'state': self._state})['state'])
+        if hasattr(self, '_postcode') and self._postcode and isinstance(self._postcode, str):
+            setattr(self, 'postcode', encrypt_address_data({'postcode': self._postcode})['postcode'])
+    
+    def _decrypt_address_data(self):
+        """Decrypt address data for reading."""
+        # Get the actual field values from the database
+        address_value = getattr(self, 'address', '') or ''
+        street_value = getattr(self, 'street', '') or ''
+        suburb_value = getattr(self, 'suburb', '') or ''
+        state_value = getattr(self, 'state', '') or ''
+        postcode_value = getattr(self, 'postcode', '') or ''
+        
+        # Convert to strings if they're not already
+        if hasattr(address_value, '__str__'):
+            address_value = str(address_value)
+        if hasattr(street_value, '__str__'):
+            street_value = str(street_value)
+        if hasattr(suburb_value, '__str__'):
+            suburb_value = str(suburb_value)
+        if hasattr(state_value, '__str__'):
+            state_value = str(state_value)
+        if hasattr(postcode_value, '__str__'):
+            postcode_value = str(postcode_value)
+        
+        decrypted_data = decrypt_address_data({
+            'address': address_value,
+            'street': street_value,
+            'suburb': suburb_value,
+            'state': state_value,
+            'postcode': postcode_value
+        })
+        return decrypted_data
     
     # Methods to set address data for creation/updates
     def set_address_data(self, address=None, street=None, suburb=None, state=None, postcode=None):

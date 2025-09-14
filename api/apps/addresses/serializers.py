@@ -5,20 +5,22 @@ Address serializers for MyAddressHub.
 from rest_framework import serializers
 from .models import Address
 from .blockchain import blockchain_manager
+from .encryption import encrypt_address_data
 
 
 class AddressBreakdownSerializer(serializers.Serializer):
     """Serializer for address breakdown."""
-    address = serializers.CharField(max_length=255)
-    street = serializers.CharField(max_length=255)
-    suburb = serializers.CharField(max_length=255)
-    state = serializers.CharField(max_length=100)
-    postcode = serializers.CharField(max_length=10)
+    address = serializers.CharField(source='address_line', max_length=255)
+    street = serializers.CharField(source='street_name', max_length=255)
+    suburb = serializers.CharField(source='suburb_name', max_length=255)
+    state = serializers.CharField(source='state_name', max_length=100)
+    postcode = serializers.CharField(source='postal_code', max_length=10)
 
 
 class BlockchainInfoSerializer(serializers.Serializer):
     """Serializer for blockchain information."""
     is_stored_on_blockchain = serializers.BooleanField()
+    last_synced_at = serializers.DateTimeField(allow_null=True)
     blockchain_tx_hash = serializers.CharField(allow_null=True, allow_blank=True)
     blockchain_block_number = serializers.IntegerField(allow_null=True)
     ipfs_hash = serializers.CharField(allow_null=True, allow_blank=True)
@@ -33,11 +35,11 @@ class AddressSerializer(serializers.ModelSerializer):
     blockchain_info = BlockchainInfoSerializer(source='*', read_only=True)
     
     # Address fields are now read-only properties from blockchain
-    address = serializers.CharField(read_only=True)
-    street = serializers.CharField(read_only=True)
-    suburb = serializers.CharField(read_only=True)
-    state = serializers.CharField(read_only=True)
-    postcode = serializers.CharField(read_only=True)
+    address = serializers.CharField(source='address_line', read_only=True)
+    street = serializers.CharField(source='street_name', read_only=True)
+    suburb = serializers.CharField(source='suburb_name', read_only=True)
+    state = serializers.CharField(source='state_name', read_only=True)
+    postcode = serializers.CharField(source='postal_code', read_only=True)
     
     class Meta:
         model = Address
@@ -45,10 +47,10 @@ class AddressSerializer(serializers.ModelSerializer):
             'id', 'address_name', 'address', 'street', 'suburb', 'state', 'postcode',
             'is_default', 'is_active', 'created_at', 'updated_at',
             'address_breakdown', 'full_address', 'blockchain_info',
-            'is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'
+            'is_stored_on_blockchain', 'last_synced_at', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'address', 'street', 'suburb', 'state', 'postcode', 
-                           'is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash']
+                           'is_stored_on_blockchain', 'last_synced_at', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash']
     
     def validate(self, attrs):
         """Custom validation for address data."""
@@ -102,15 +104,20 @@ class AddressCreateSerializer(serializers.ModelSerializer):
             'postcode': validated_data.pop('postcode', '')
         }
         
-        # Create the address instance with explicit user assignment
-        address = Address()
-        address.user = self.context['request'].user
-        address.address_name = validated_data.get('address_name', '')
-        address.is_default = validated_data.get('is_default', False)
-        address.is_active = validated_data.get('is_active', True)
+        # Create the address instance using the standard DRF pattern
+        validated_data['user'] = self.context['request'].user
+        address = Address.objects.create(**validated_data)
         
-        # Save the address first (without blockchain storage)
-        address.save()
+        # Now encrypt and update the address data
+        if any(address_data.values()):
+            # Encrypt the address data
+            encrypted_data = encrypt_address_data(address_data)
+            
+            # Update the address with encrypted data
+            Address.objects.filter(pk=address.pk).update(**encrypted_data)
+            
+            # Refresh the instance to get the updated data
+            address.refresh_from_db()
         
         # Store address data on blockchain separately
         if blockchain_manager.is_connected():
@@ -208,6 +215,19 @@ class AddressUpdateSerializer(serializers.ModelSerializer):
         for attr, value in validated_data.items():
             if attr != 'user':  # Don't update user field
                 setattr(instance, attr, value)
+        
+        # Set temporary attributes for encryption if address data is provided
+        if address_data:
+            if 'address' in address_data:
+                instance._address = address_data['address']
+            if 'street' in address_data:
+                instance._street = address_data['street']
+            if 'suburb' in address_data:
+                instance._suburb = address_data['suburb']
+            if 'state' in address_data:
+                instance._state = address_data['state']
+            if 'postcode' in address_data:
+                instance._postcode = address_data['postcode']
         
         # Save the instance first (without blockchain storage)
         instance.save()

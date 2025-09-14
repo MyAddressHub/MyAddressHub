@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     # Project apps
     'apps.accounts',
+    'apps.addresses',
     'apps.core',
 ]
 
@@ -149,6 +150,7 @@ exchange_default = Exchange('default')
 CELERY_TASK_QUEUES = (
     Queue('default', exchange_default, routing_key='default'),
     Queue('emails', exchange_default, routing_key='emails'),
+    Queue('blockchain_sync', exchange_default, routing_key='blockchain_sync'),
 )
 
 # Default Queue Settings
@@ -165,6 +167,9 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_ROUTES = {
     'djmail.tasks.send_messages': {'exchange': 'default', 'routing_key': 'emails'},
     'djmail.tasks.retry_send_messages': {'exchange': 'default', 'routing_key': 'emails'},
+    'apps.addresses.tasks.sync_addresses_to_blockchain': {'exchange': 'default', 'routing_key': 'blockchain_sync'},
+    'apps.addresses.tasks.update_addresses_on_blockchain': {'exchange': 'default', 'routing_key': 'blockchain_sync'},
+    'apps.addresses.tasks.schedule_batch_sync': {'exchange': 'default', 'routing_key': 'default'},
 }
 
 # Import Celery Beat schedule

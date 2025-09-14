@@ -11,17 +11,17 @@ class AddressAdmin(admin.ModelAdmin):
     """Admin interface for Address model."""
     list_display = [
         'id', 'user', 'address_name', 'is_default', 'is_active', 
-        'is_stored_on_blockchain', 'created_at'
+        'is_stored_on_blockchain', 'last_synced_at', 'created_at'
     ]
     list_filter = [
-        'is_default', 'is_active', 'is_stored_on_blockchain', 'created_at', 'updated_at'
+        'is_default', 'is_active', 'is_stored_on_blockchain', 'created_at', 'updated_at', 'last_synced_at'
     ]
     search_fields = [
         'user__email', 'user__username', 'address_name'
     ]
     readonly_fields = [
         'id', 'created_at', 'updated_at', 'blockchain_tx_hash', 
-        'blockchain_block_number', 'ipfs_hash'
+        'blockchain_block_number', 'ipfs_hash', 'last_synced_at'
     ]
     list_select_related = ['user']
     
@@ -33,7 +33,7 @@ class AddressAdmin(admin.ModelAdmin):
             'fields': ('is_default', 'is_active')
         }),
         ('Blockchain Information', {
-            'fields': ('is_stored_on_blockchain', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'),
+            'fields': ('is_stored_on_blockchain', 'last_synced_at', 'blockchain_tx_hash', 'blockchain_block_number', 'ipfs_hash'),
             'classes': ('collapse',)
         }),
         ('Timestamps', {
