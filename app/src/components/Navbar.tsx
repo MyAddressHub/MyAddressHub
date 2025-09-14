@@ -27,6 +27,9 @@ export function Navbar() {
     { name: 'About', href: '/about' },
   ];
 
+  // Check if user can manage organization users
+  const canManageOrgUsers = user?.profile?.can_manage_organization_users;
+
   const handleLogout = async () => {
     await logout();
   };
@@ -63,6 +66,20 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Organization Management Menu Item */}
+              {canManageOrgUsers && (
+                <Link
+                  href="/organization"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/organization'
+                      ? 'text-white bg-gray-900 dark:bg-gray-700'
+                      : 'text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Organization
+                </Link>
+              )}
               
               {/* Theme toggle button */}
               {mounted && (
@@ -147,6 +164,21 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Organization Management Menu Item for Mobile */}
+              {canManageOrgUsers && (
+                <Link
+                  href="/organization"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    pathname === '/organization'
+                      ? 'text-white bg-gray-900 dark:bg-gray-700'
+                      : 'text-gray-700 hover:bg-gray-200 dark:text-gray-300 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Organization
+                </Link>
+              )}
               {user ? (
                 <>
                   <span className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">

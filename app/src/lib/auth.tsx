@@ -19,6 +19,8 @@ type User = {
     avatar: string | null;
     phone_number: string;
     user_type: 'individual' | 'organization';
+    organization_role?: string | null;
+    can_manage_organization_users?: boolean;
     organization?: {
       id: string;
       name: string;
@@ -34,28 +36,33 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   register: (userData: any) => Promise<void>;
   updateProfile: (profileData: any) => Promise<void>;
+  refreshUser: () => Promise<void>;
 };
 
 // Create the auth context with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  token: null,
   isLoading: false,
   isAuthenticated: false,
   login: async () => {},
   logout: () => {},
   register: async () => {},
   updateProfile: async () => {},
+  refreshUser: async () => {},
 });
 
 // Auth provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -69,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }, 2000); // 2 second timeout
 
       try {
-        const token = localStorage.getItem('accessToken');
-        if (!token) {
+        const accessToken = localStorage.getItem('accessToken');
+        if (!accessToken) {
           console.log('No token found, user is not authenticated');
           clearTimeout(timeoutId);
           setIsLoading(false);
@@ -78,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         console.log('Token found, checking user profile...');
+        setToken(accessToken);
         const response = await userAPI.getProfile();
         console.log('User profile loaded:', response.data);
         setUser(response.data);
@@ -109,12 +117,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const authResponse = await authAPI.login(username, password);
       
       // Verify tokens were set
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
         throw new Error('Login failed: No token received');
       }
 
-      // Fetch user profile
+      // Set token and fetch user profile
+      setToken(accessToken);
       const userResponse = await userAPI.getProfile();
       setUser(userResponse.data);
       
@@ -136,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
+    setToken(null);
     
     // Navigate to login
     router.replace('/auth/login');
@@ -178,14 +188,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        console.log('No token found for refresh');
+        return;
+      }
+
+      console.log('Refreshing user profile...');
+      setToken(accessToken);
+      const response = await userAPI.getProfile();
+      console.log('User profile refreshed:', response.data);
+      setUser(response.data);
+    } catch (error) {
+      console.error('User refresh failed:', error);
+      // Clear tokens if refresh fails
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+      setToken(null);
+    }
+  };
+
   const value = {
     user,
+    token,
     isLoading,
     isAuthenticated: !!user,
     login,
     logout,
     register,
     updateProfile,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,6 +6,8 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from django.utils import timezone
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
@@ -22,7 +24,11 @@ from apps.accounts.serializers import (
     ResetPasswordSerializer,
     UserProfileSerializer,
     ProfileUpdateSerializer,
+    OrganizationMembershipSerializer,
+    OrganizationUserCreateSerializer,
+    OrganizationUserUpdateSerializer,
 )
+from apps.accounts.models import Organization, OrganizationMembership
 from apps.core.mail import send_email
 
 User = get_user_model()
@@ -175,4 +181,221 @@ class ProfileUpdateView(generics.UpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):
-        return self.request.user.profile 
+        return self.request.user.profile
+
+
+# Organization User Management Views
+
+class OrganizationUsersListView(generics.ListAPIView):
+    """
+    API endpoint for listing organization users.
+    """
+    serializer_class = OrganizationMembershipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get users of the current user's organization."""
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.organization:
+            return OrganizationMembership.objects.filter(
+                organization=user.profile.organization,
+                is_active=True
+            ).select_related('user', 'created_by')
+        return OrganizationMembership.objects.none()
+
+
+class OrganizationUserCreateView(generics.CreateAPIView):
+    """
+    API endpoint for creating users within an organization.
+    """
+    serializer_class = OrganizationUserCreateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_context(self):
+        """Add organization and creator to serializer context."""
+        context = super().get_serializer_context()
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.organization:
+            context['organization'] = user.profile.organization
+            context['created_by'] = user
+        return context
+    
+    def perform_create(self, serializer):
+        """Create user with proper permissions check."""
+        user = self.request.user
+        
+        # Check if user has permission to create users
+        if not hasattr(user, 'profile') or not user.profile.organization:
+            raise permissions.PermissionDenied("You are not a member of any organization.")
+        
+        # Get user's membership
+        try:
+            membership = OrganizationMembership.objects.get(
+                organization=user.profile.organization,
+                user=user,
+                is_active=True
+            )
+        except OrganizationMembership.DoesNotExist:
+            raise permissions.PermissionDenied("You are not a member of this organization.")
+        
+        # Check if user can manage users
+        if not membership.can_manage_users:
+            raise permissions.PermissionDenied("You don't have permission to create users.")
+        
+        # Create the user
+        serializer.save()
+
+
+class OrganizationUserUpdateView(generics.UpdateAPIView):
+    """
+    API endpoint for updating organization users.
+    """
+    serializer_class = OrganizationUserUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get users that the current user can manage."""
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.organization:
+            # Get all users in the same organization
+            organization_users = User.objects.filter(
+                profile__organization=user.profile.organization,
+                profile__user_type='organization'
+            )
+            return organization_users
+        return User.objects.none()
+    
+    def perform_update(self, serializer):
+        """Update user with permission check."""
+        target_user = serializer.instance
+        current_user = self.request.user
+        
+        # Check if current user has permission to manage users
+        if not hasattr(current_user, 'profile') or not current_user.profile.organization:
+            raise permissions.PermissionDenied("You are not a member of any organization.")
+        
+        # Get current user's membership
+        try:
+            current_membership = OrganizationMembership.objects.get(
+                organization=current_user.profile.organization,
+                user=current_user,
+                is_active=True
+            )
+        except OrganizationMembership.DoesNotExist:
+            raise permissions.PermissionDenied("You are not a member of this organization.")
+        
+        # Check if current user can manage users
+        if not current_membership.can_manage_users:
+            raise permissions.PermissionDenied("You don't have permission to manage users.")
+        
+        # Prevent users from updating themselves
+        if target_user == current_user:
+            raise permissions.PermissionDenied("You cannot update your own account through this endpoint.")
+        
+        # Check if target user is in the same organization
+        if not hasattr(target_user, 'profile') or target_user.profile.organization != current_user.profile.organization:
+            raise permissions.PermissionDenied("You can only manage users in your organization.")
+        
+        serializer.save()
+
+
+class OrganizationUserDeleteView(generics.UpdateAPIView):
+    """
+    API endpoint for deactivating organization users.
+    """
+    serializer_class = OrganizationMembershipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get members that the current user can manage."""
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.organization:
+            return OrganizationMembership.objects.filter(
+                organization=user.profile.organization,
+                is_active=True
+            )
+        return OrganizationMembership.objects.none()
+    
+    def perform_update(self, serializer):
+        """Deactivate user with permission check."""
+        membership = serializer.instance
+        current_user = self.request.user
+        
+        # Check if current user has permission to manage users
+        if not hasattr(current_user, 'profile') or not current_user.profile.organization:
+            raise permissions.PermissionDenied("You are not a member of any organization.")
+        
+        # Get current user's membership
+        try:
+            current_membership = OrganizationMembership.objects.get(
+                organization=current_user.profile.organization,
+                user=current_user,
+                is_active=True
+            )
+        except OrganizationMembership.DoesNotExist:
+            raise permissions.PermissionDenied("You are not a member of this organization.")
+        
+        # Check if current user can manage users
+        if not current_membership.can_manage_users:
+            raise permissions.PermissionDenied("You don't have permission to manage users.")
+        
+        # Prevent users from deactivating themselves
+        if membership.user == current_user:
+            raise permissions.PermissionDenied("You cannot deactivate your own account.")
+        
+        # Prevent non-owners from deactivating owners
+        if membership.role == 'owner' and current_membership.role != 'owner':
+            raise permissions.PermissionDenied("Only owners can deactivate other owners.")
+        
+        serializer.save(is_active=False)
+
+
+class OrganizationUserRoleUpdateView(generics.UpdateAPIView):
+    """
+    API endpoint for updating organization user roles.
+    """
+    serializer_class = OrganizationMembershipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get members that the current user can manage."""
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.organization:
+            return OrganizationMembership.objects.filter(
+                organization=user.profile.organization,
+                is_active=True
+            )
+        return OrganizationMembership.objects.none()
+    
+    def perform_update(self, serializer):
+        """Update user role with permission check."""
+        membership = serializer.instance
+        current_user = self.request.user
+        
+        # Check if current user has permission to manage users
+        if not hasattr(current_user, 'profile') or not current_user.profile.organization:
+            raise permissions.PermissionDenied("You are not a member of any organization.")
+        
+        # Get current user's membership
+        try:
+            current_membership = OrganizationMembership.objects.get(
+                organization=current_user.profile.organization,
+                user=current_user,
+                is_active=True
+            )
+        except OrganizationMembership.DoesNotExist:
+            raise permissions.PermissionDenied("You are not a member of this organization.")
+        
+        # Check if current user can manage users
+        if not current_membership.can_manage_users:
+            raise permissions.PermissionDenied("You don't have permission to manage users.")
+        
+        # Prevent users from changing their own role
+        if membership.user == current_user:
+            raise permissions.PermissionDenied("You cannot change your own role.")
+        
+        # Prevent non-owners from changing owner roles
+        if membership.role == 'owner' and current_membership.role != 'owner':
+            raise permissions.PermissionDenied("Only owners can change owner roles.")
+        
+        serializer.save() 

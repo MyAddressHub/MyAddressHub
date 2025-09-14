@@ -9,7 +9,7 @@ from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import get_user_model
 
-from apps.accounts.models import Profile, Organization, AddressPermission
+from apps.accounts.models import Profile, Organization, AddressPermission, OrganizationMembership
 
 User = get_user_model()
 
@@ -29,10 +29,15 @@ class ProfileSerializer(serializers.ModelSerializer):
     """
     organization = OrganizationSerializer(read_only=True)
     organization_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    organization_role = serializers.ReadOnlyField()
+    can_manage_organization_users = serializers.ReadOnlyField()
     
     class Meta:
         model = Profile
-        fields = ['id', 'user_type', 'organization', 'organization_id', 'bio', 'avatar', 'phone_number', 'created_at', 'updated_at']
+        fields = [
+            'id', 'user_type', 'organization', 'organization_id', 'organization_role', 
+            'can_manage_organization_users', 'bio', 'avatar', 'phone_number', 'created_at', 'updated_at'
+        ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def validate(self, attrs):
@@ -196,6 +201,103 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
         fields = ['bio', 'avatar', 'phone_number']
+
+
+class OrganizationMembershipSerializer(serializers.ModelSerializer):
+    """
+    Serializer for OrganizationMembership model.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+    user_last_name = serializers.CharField(source='user.last_name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    
+    class Meta:
+        model = OrganizationMembership
+        fields = [
+            'id', 'organization', 'organization_name', 'user', 'user_username', 
+            'user_email', 'user_first_name', 'user_last_name', 'role', 
+            'created_by', 'created_by_username', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+
+class OrganizationUserCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating users within an organization.
+    """
+    password = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
+    role = serializers.ChoiceField(choices=OrganizationMembership.ROLE_CHOICES, default='member')
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'password2', 'role']
+        extra_kwargs = {
+            'email': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True}
+        }
+    
+    def validate(self, attrs):
+        if attrs['password'] != attrs.pop('password2'):
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return attrs
+    
+    def create(self, validated_data):
+        role = validated_data.pop('role', 'member')
+        organization = self.context.get('organization')
+        created_by = self.context.get('created_by')
+        
+        # Create user
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            first_name=validated_data['first_name'],
+            last_name=validated_data['last_name']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        
+        # Update profile to organization type
+        profile = user.profile
+        profile.user_type = 'organization'
+        profile.organization = organization
+        profile.save()
+        
+        # Create organization membership
+        OrganizationMembership.objects.create(
+            organization=organization,
+            user=user,
+            role=role,
+            created_by=created_by,
+            is_active=True
+        )
+        
+        return user
+
+
+class OrganizationUserUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for updating organization users.
+    """
+    role = serializers.CharField(source='organization_memberships.first.role', read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'role']
+    
+    def update(self, instance, validated_data):
+        # Update user fields
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.save()
+        
+        return instance
 
 
 class AddressPermissionSerializer(serializers.ModelSerializer):

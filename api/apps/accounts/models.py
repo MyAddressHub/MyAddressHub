@@ -6,6 +6,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from apps.core.models import TimeStampedModel, UUIDModel
 
@@ -48,6 +49,28 @@ class Profile(UUIDModel, TimeStampedModel):
     @property
     def is_organization_user(self):
         return self.user_type == 'organization'
+    
+    @property
+    def organization_role(self):
+        """Get the user's role in their organization."""
+        if not self.is_organization_user or not self.organization:
+            return None
+        
+        try:
+            membership = OrganizationMembership.objects.get(
+                organization=self.organization,
+                user=self.user,
+                is_active=True
+            )
+            return membership.role
+        except OrganizationMembership.DoesNotExist:
+            return None
+    
+    @property
+    def can_manage_organization_users(self):
+        """Check if user can manage other users in their organization."""
+        role = self.organization_role
+        return role in ['owner', 'admin', 'manager']
     
     @classmethod
     def get_or_create_for_user(cls, user):
@@ -117,6 +140,41 @@ class AddressPermission(UUIDModel, TimeStampedModel):
     
     def __str__(self):
         return f"{self.organization.name} -> {self.address.address_name}"
+
+
+class OrganizationMembership(UUIDModel, TimeStampedModel):
+    """
+    Model to track organization memberships and their roles.
+    """
+    ROLE_CHOICES = [
+        ('owner', 'Owner'),
+        ('admin', 'Administrator'),
+        ('manager', 'Manager'),
+        ('member', 'Member'),
+    ]
+    
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='memberships')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organization_memberships')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_memberships')
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        unique_together = ['organization', 'user']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.organization.name} ({self.role})"
+    
+    @property
+    def can_manage_users(self):
+        """Check if user can manage other users in the organization."""
+        return self.role in ['owner', 'admin', 'manager']
+    
+    @property
+    def can_manage_organization(self):
+        """Check if user can manage organization settings."""
+        return self.role in ['owner', 'admin']
 
 
 class LookupRecord(UUIDModel, TimeStampedModel):

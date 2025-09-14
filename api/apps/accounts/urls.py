@@ -13,6 +13,11 @@ from apps.accounts.views import (
     CustomTokenObtainPairView,
     UserProfileView,
     ProfileUpdateView,
+    OrganizationUsersListView,
+    OrganizationUserCreateView,
+    OrganizationUserUpdateView,
+    OrganizationUserDeleteView,
+    OrganizationUserRoleUpdateView,
 )
 
 urlpatterns = [
@@ -27,4 +32,11 @@ urlpatterns = [
     # Profile endpoints
     path('profile/', UserProfileView.as_view(), name='user_profile'),
     path('profile/update/', ProfileUpdateView.as_view(), name='profile_update'),
+    
+    # Organization user management endpoints
+    path('organization/users/', OrganizationUsersListView.as_view(), name='organization_users'),
+    path('organization/users/create/', OrganizationUserCreateView.as_view(), name='organization_user_create'),
+    path('organization/users/<int:pk>/update/', OrganizationUserUpdateView.as_view(), name='organization_user_update'),
+    path('organization/users/<uuid:pk>/deactivate/', OrganizationUserDeleteView.as_view(), name='organization_user_delete'),
+    path('organization/users/<uuid:pk>/role/', OrganizationUserRoleUpdateView.as_view(), name='organization_user_role_update'),
 ] 
