@@ -6,14 +6,14 @@ import axios from '@/shared/api/axios';
 
 interface OrganizationMember {
   id: string;
-  user_username: string;
-  user_email: string;
-  user_first_name: string;
-  user_last_name: string;
+  userUsername: string;
+  userEmail: string;
+  userFirstName: string;
+  userLastName: string;
   role: 'owner' | 'admin' | 'manager' | 'member';
-  created_by_username: string;
-  created_at: string;
-  is_active: boolean;
+  createdByUsername: string;
+  createdAt: string;
+  isActive: boolean;
 }
 
 interface CreateUserFormData {
