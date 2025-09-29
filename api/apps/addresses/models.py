@@ -126,12 +126,12 @@ class Address(models.Model):
             try:
                 # Get address data from temporary attributes if available
                 address_data = None
-                if hasattr(self, '_address') or hasattr(self, '_street') or hasattr(self, '_suburb') or hasattr(self, '_state') or hasattr(self, '_postcode'):
+                if hasattr(self, '_address') or hasattr(self, '_street') or hasattr(self, '_suburb') or hasattr(self, '_state_value') or hasattr(self, '_postcode'):
                     address_data = {
                         'address': getattr(self, '_address', ''),
                         'street': getattr(self, '_street', ''),
                         'suburb': getattr(self, '_suburb', ''),
-                        'state': getattr(self, '_state', ''),
+                        'state': getattr(self, '_state_value', ''),
                         'postcode': getattr(self, '_postcode', '')
                     }
                 self._store_on_blockchain(address_data)
@@ -153,7 +153,7 @@ class Address(models.Model):
                     'address': getattr(self, '_address', ''),
                     'street': getattr(self, '_street', ''),
                     'suburb': getattr(self, '_suburb', ''),
-                    'state': getattr(self, '_state', ''),
+                    'state': getattr(self, '_state_value', ''),
                     'postcode': getattr(self, '_postcode', ''),
                     'is_default': self.is_default,
                     'is_active': self.is_active
@@ -408,8 +408,8 @@ class Address(models.Model):
             setattr(self, 'street', encrypt_address_data({'street': self._street})['street'])
         if hasattr(self, '_suburb') and self._suburb and isinstance(self._suburb, str):
             setattr(self, 'suburb', encrypt_address_data({'suburb': self._suburb})['suburb'])
-        if hasattr(self, '_state') and self._state and isinstance(self._state, str):
-            setattr(self, 'state', encrypt_address_data({'state': self._state})['state'])
+        if hasattr(self, '_state_value') and self._state_value and isinstance(self._state_value, str):
+            setattr(self, 'state', encrypt_address_data({'state': self._state_value})['state'])
         if hasattr(self, '_postcode') and self._postcode and isinstance(self._postcode, str):
             setattr(self, 'postcode', encrypt_address_data({'postcode': self._postcode})['postcode'])
     
@@ -453,6 +453,6 @@ class Address(models.Model):
         if suburb is not None:
             self._suburb = suburb
         if state is not None:
-            self._state = state
+            self._state_value = state
         if postcode is not None:
             self._postcode = postcode 

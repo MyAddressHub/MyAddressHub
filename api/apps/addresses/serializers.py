@@ -225,7 +225,7 @@ class AddressUpdateSerializer(serializers.ModelSerializer):
             if 'suburb' in address_data:
                 instance._suburb = address_data['suburb']
             if 'state' in address_data:
-                instance._state = address_data['state']
+                instance._state_value = address_data['state']
             if 'postcode' in address_data:
                 instance._postcode = address_data['postcode']
         
