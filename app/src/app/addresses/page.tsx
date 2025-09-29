@@ -366,7 +366,88 @@ export default function AddressesPage() {
                 {/* Dashboard Header */}
 
                 <div className="relative isolate">
-                    {/*COntent*/}
+                    <div className="mb-8 z-20">
+                        <div className="flex items-center justify-between h-[75vh]">
+                            <div className="w-3/5">
+                                {" "}
+                                {/* <h1 className="text-3xl font-bold text-stone-950 dark:text-white ">
+                                    {" "}
+                                    {user.first_name || user.username}!
+                                </h1> */}
+                                <h1 className="text-4xl font-bold text-stone-950 dark:text-white">
+                                    <Typewriter
+                                        options={{
+                                            strings: [
+                                                `Hello ${userName}`,
+                                                "Welcome Back!",
+                                            ],
+                                            autoStart: true,
+                                            loop: true,
+                                        }}
+                                    />
+                                </h1>
+                                <p className="mt-2 text-gray-600 dark:text-gray-300">
+                                    Manage your addresses and keep them
+                                    organized.
+                                </p>
+                                <div className="flex text text-stone-950 dark:text-white mt-8 gap-x-5">
+                                    <button
+                                        onClick={() =>
+                                            scrollToElement(manageREf)
+                                        }
+                                        className="px-7 py-3 bg-gray-400 dark:bg-gray-700 rounded-3xl"
+                                    >
+                                        Manage
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowForm(true)
+                                            scrollToElement(formRef)
+                                        }}
+                                        className="px-7 py-3 bg-gray-400 dark:bg-gray-700 rounded-3xl flex items-center gap-x-2"
+                                    >
+                                        <span>
+                                            <FaPlus />
+                                        </span>
+                                        <span>New Address</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="relative w-2/5 h-full overflow-hidden ">
+                                {/* blurred bg layer */}
+                                <Image
+                                    src="/hero.jpg"
+                                    alt="city"
+                                    fill
+                                    priority
+                                    className="object-cover blur-[4px] saturate-150 brightness-90 rounded-lg "
+                                />
+                                {/* sharp layer on top */}
+                                <Image
+                                    src="/hero.jpg"
+                                    alt="city"
+                                    fill
+                                    className="object-cover scale-y-[82.5%] scale-x-[85%] translate-x-9  saturate-[25%] rounded-xs"
+                                />
+                            </div>
+                            {/* <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Total Addresses
+                                </p>
+                                <p className="text-2xl font-bold text-stone-950 dark:text-white">
+                                    {totalAddresses}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowForm(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                                Add New Address
+                            </button>
+                        </div> */}
+                        </div>
+                    </div>
 
                     {/* top background blob */}
                     <div
