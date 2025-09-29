@@ -40,7 +40,7 @@ export function Navbar() {
 
     return (
         <nav className="bg-white shadow dark:bg-stone-950">
-            <div className="container mx-auto px-6 py-4 my-10 border-2 rounded-xl">
+            <div className="container mx-auto px-6 py-4 my-10 lg:border-x-2 lg:border-t-2  rounded-t-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center space-x-2">
@@ -111,7 +111,7 @@ export function Navbar() {
                             ) : (
                                 <Link
                                     href="/auth/login"
-                                    className="px-3 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                    className="px-3 py-2 rounded-md text-sm font-medium text-white bg-gray-600 dark:bg-gray-800 hover:bg-gray-700 dark:hover:bg-gray-700"
                                 >
                                     Login
                                 </Link>

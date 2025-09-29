@@ -368,7 +368,7 @@ export default function AddressesPage() {
                 <div className="relative isolate">
                     <div className="mb-8 z-20">
                         <div className="flex items-center justify-between h-[75vh]">
-                            <div className="w-3/5">
+                            <div className="lg:w-3/5">
                                 {" "}
                                 {/* <h1 className="text-3xl font-bold text-stone-950 dark:text-white ">
                                     {" "}
@@ -413,7 +413,8 @@ export default function AddressesPage() {
                                     </button>
                                 </div>
                             </div>
-                            <div className="relative w-2/5 h-full overflow-hidden ">
+
+                            <div className="relative w-2/5 h-full  hidden lg:block -mb-10">
                                 {/* blurred bg layer */}
                                 <Image
                                     src="/hero.jpg"
@@ -429,6 +430,7 @@ export default function AddressesPage() {
                                     fill
                                     className="object-cover scale-y-[82.5%] scale-x-[85%] translate-x-9  saturate-[25%] rounded-xs"
                                 />
+                                <div className="absolute w-full h-full bg-transparent origin-top-left top-[-6%] left-[-10%] -z-10  border-[2.5px] border-gray-800 scale-[95%] rounded-sm"></div>
                             </div>
                             {/* <div className="flex items-center space-x-4">
                             <div className="text-right">
