@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Environment variables
 env = environ.Env()
-env.read_env(os.path.join(BASE_DIR.parent, ".env"))
+env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Security settings
 SECRET_KEY = env("DJANGO_SECRET_KEY")
