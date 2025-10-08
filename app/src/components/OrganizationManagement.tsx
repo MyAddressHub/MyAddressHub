@@ -395,7 +395,7 @@ const OrganizationManagement: React.FC = () => {
                                                                 e.target.value
                                                             )
                                                         }
-                                                        className="border border-gray-300 rounded px-2 py-1 text-xs"
+                                                        className="border border-gray-300 rounded px-2 py-1 text-xs text-white cursor-pointer"
                                                         disabled={
                                                             member.userUsername ===
                                                             user?.username
