@@ -40,7 +40,7 @@ export function Navbar() {
 
     return (
         <nav className="bg-white shadow dark:bg-stone-950">
-            <div className="container mx-auto px-6 py-4 my-10 lg:border-x-2 lg:border-t-2  rounded-t-sm">
+            <div className="container mx-auto px-6 py-4 my-10  rounded-t-sm">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center">
                         <Link href="/" className="flex items-center space-x-2">
